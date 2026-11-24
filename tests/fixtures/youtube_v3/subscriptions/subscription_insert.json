@@ -1,0 +1,15 @@
+{
+  "kind": "youtube#subscription",
+  "etag": "\"nEwSuBsCrIpTiOnEtAg\"",
+  "id": "sUbScRiPtIoN_NEW_SUCCESS_99",
+  "snippet": {
+    "publishedAt": "2026-11-24T13:10:00Z",
+    "title": "Rick Astley",
+    "description": "Subscribed via FluxTube.",
+    "resourceId": {
+      "kind": "youtube#channel",
+      "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw"
+    },
+    "channelId": "UC_CURRENT_USER_ID"
+  }
+}

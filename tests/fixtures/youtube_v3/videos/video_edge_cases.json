@@ -1,0 +1,205 @@
+{
+  "kind": "youtube#videoListResponse",
+  "etag": "\"eDgEcAsEsEtAg99999\"",
+  "pageInfo": {
+    "totalResults": 8,
+    "resultsPerPage": 8
+  },
+  "items": [
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE1_zErO_vIeWs\"",
+      "id": "EDGE_ZERO_VIEWS",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Zero Views Brand New Video",
+        "description": "Video with literally 0 views, 0 likes, 0 comments.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/zero/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "New Creator",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": { "duration": "PT1M0S" },
+      "status": { "embeddable": true, "privacyStatus": "public" },
+      "statistics": {
+        "viewCount": "0",
+        "likeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE2_mAx_vIeWs\"",
+      "id": "EDGE_MAX_U64_VIEWS",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Video with Maximum u64 View Count",
+        "description": "Testing boundary for u64 deserialization.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/max/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Cosmic Creator",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": { "duration": "PT5M0S" },
+      "status": { "embeddable": true, "privacyStatus": "public" },
+      "statistics": {
+        "viewCount": "18446744073709551615",
+        "likeCount": "9223372036854775807",
+        "favoriteCount": "0",
+        "commentCount": "4294967295"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE3_cOmMeNtS_dIsAbLeD\"",
+      "id": "EDGE_COMMENTS_DISABLED",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Video with Disabled Comments Section",
+        "description": "Notice commentCount field is completely absent from statistics.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/nocomment/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Strict Creator",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": { "duration": "PT2M30S" },
+      "status": { "embeddable": true, "privacyStatus": "public" },
+      "statistics": {
+        "viewCount": "5000",
+        "likeCount": "200",
+        "favoriteCount": "0"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE4_lIkEs_hIdDeN\"",
+      "id": "EDGE_LIKES_HIDDEN",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Video with Hidden Like Count",
+        "description": "Notice likeCount field is absent from statistics.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/nolike/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Private Creator",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": { "duration": "PT3M0S" },
+      "status": { "embeddable": true, "privacyStatus": "public" },
+      "statistics": {
+        "viewCount": "12000",
+        "favoriteCount": "0",
+        "commentCount": "50"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE5_eMbEd_fAlSe\"",
+      "id": "EDGE_NOT_EMBEDDABLE",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Third-Party Embedding Disabled Video",
+        "description": "Video publisher turned off external embedding.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/noembed/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Exclusive Studio",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": { "duration": "PT10M0S" },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "embeddable": false,
+        "madeForKids": false
+      },
+      "statistics": {
+        "viewCount": "89000",
+        "likeCount": "1200",
+        "favoriteCount": "0",
+        "commentCount": "34"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE6_mInImAl_tHuMbS\"",
+      "id": "EDGE_MINIMAL_THUMBS",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Video with Only Low Res Default Thumbnail",
+        "description": "Testing missing medium, high, standard, maxres thumbnails.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/min/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Minimalist",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": { "duration": "PT15S" },
+      "status": { "embeddable": true, "privacyStatus": "public" },
+      "statistics": {
+        "viewCount": "100",
+        "likeCount": "10",
+        "favoriteCount": "0",
+        "commentCount": "1"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE7_lIvE_sTrEaM\"",
+      "id": "EDGE_ACTIVE_LIVE",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Ongoing Live Stream Broadcast",
+        "description": "Live broadcast content with PT0S duration.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/live2/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "News Broadcaster",
+        "liveBroadcastContent": "live"
+      },
+      "contentDetails": { "duration": "PT0S" },
+      "status": { "embeddable": true, "privacyStatus": "public" },
+      "statistics": {
+        "viewCount": "4500",
+        "likeCount": "320",
+        "favoriteCount": "0",
+        "commentCount": "150"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"eDgE8_uNiCoDe_eNtItIeS\"",
+      "id": "EDGE_UNICODE_TITLE",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "&#39;FluxTube&#39; &amp; Rust &lt;Desktop&gt; 🚀 測試 • اختبار • Тест",
+        "description": "Testing HTML entities decoding (&#39;, &amp;, &lt;) and multi-script UTF-8.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/unicode/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Клієнт FluxTube Україна 🇺🇦",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": { "duration": "PT7M21S" },
+      "status": { "embeddable": true, "privacyStatus": "public" },
+      "statistics": {
+        "viewCount": "77777",
+        "likeCount": "8888",
+        "favoriteCount": "0",
+        "commentCount": "999"
+      }
+    }
+  ]
+}

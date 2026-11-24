@@ -1,0 +1,39 @@
+{
+  "kind": "youtube#playlistItemListResponse",
+  "etag": "\"uPlOaDsPaGe2EtAg\"",
+  "prevPageToken": "EAAaBlBUOkNBQQ",
+  "pageInfo": {
+    "totalResults": 142,
+    "resultsPerPage": 1
+  },
+  "items": [
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "\"pLiTeM_9bZkp7q19f0\"",
+      "id": "UEx1QUxGa2dzdzFMN3hhQ2ZuZDVKSk93LjQ0NTU2",
+      "snippet": {
+        "publishedAt": "2024-02-01T10:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "PSY - GANGNAM STYLE(강남스타일) M/V",
+        "description": "Archival upload.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Rick Astley",
+        "playlistId": "UUuAXFkgsw1L7xaCfnd5JJOw",
+        "position": 3,
+        "resourceId": {
+          "kind": "youtube#video",
+          "videoId": "9bZkp7q19f0"
+        }
+      },
+      "contentDetails": {
+        "videoId": "9bZkp7q19f0",
+        "videoPublishedAt": "2012-07-15T07:46:32Z"
+      },
+      "status": {
+        "privacyStatus": "public"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+[package]
+name = "fluxtube-player-native"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+fluxtube-core = { workspace = true }
+fluxtube-player = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { version = "1.38", features = ["full", "test-util"] }

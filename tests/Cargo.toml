@@ -1,0 +1,47 @@
+[package]
+name = "fluxtube-e2e"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[lints.cargo]
+unused_dependencies = "allow"
+
+[lib]
+name = "e2e_runner"
+path = "e2e/runner.rs"
+
+[[test]]
+name = "tier1_feature_coverage"
+path = "e2e/tier1_feature_coverage.rs"
+
+[[test]]
+name = "tier2_boundary_corner"
+path = "e2e/tier2_boundary_corner.rs"
+
+[[test]]
+name = "tier3_pairwise_combinations"
+path = "e2e/tier3_pairwise_combinations.rs"
+
+[[test]]
+name = "tier4_real_world_scenarios"
+path = "e2e/tier4_real_world_scenarios.rs"
+
+[dependencies]
+tokio = { version = "1.38", features = ["full", "test-util"] }
+wiremock = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tempfile = "3.10"
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+async-trait = "0.1"
+rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+regex = "1.10"
+sha2 = "0.10"
+base64 = "0.22"
+url = "2.5"

@@ -1,0 +1,106 @@
+{
+  "kind": "youtube#commentThreadListResponse",
+  "etag": "\"cOmMeNtThReAdSEtAg\"",
+  "nextPageToken": "QURTSl9pMVJ3...",
+  "pageInfo": {
+    "totalResults": 2,
+    "resultsPerPage": 2
+  },
+  "items": [
+    {
+      "kind": "youtube#commentThread",
+      "etag": "\"tHrEaD1EtAg\"",
+      "id": "UgzD_xYzRickAstley001",
+      "snippet": {
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "videoId": "dQw4w9WgXcQ",
+        "topLevelComment": {
+          "kind": "youtube#comment",
+          "etag": "\"cOmMeNt1EtAg\"",
+          "id": "UgzD_xYzRickAstley001",
+          "snippet": {
+            "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+            "videoId": "dQw4w9WgXcQ",
+            "textDisplay": "Still a masterpiece in 2026! 🚀 FluxTube on macOS Big Sur runs this flawlessly.",
+            "textOriginal": "Still a masterpiece in 2026! 🚀 FluxTube on macOS Big Sur runs this flawlessly.",
+            "authorDisplayName": "VintageMacFan",
+            "authorProfileImageUrl": "https://yt3.ggpht.com/avatar_user1.jpg",
+            "authorChannelUrl": "http://www.youtube.com/channel/UC_user1",
+            "authorChannelId": {
+              "value": "UC_user1"
+            },
+            "canRate": true,
+            "viewerRating": "none",
+            "likeCount": 1542,
+            "publishedAt": "2026-01-01T14:32:00Z",
+            "updatedAt": "2026-01-01T14:32:00Z"
+          }
+        },
+        "canReply": true,
+        "totalReplyCount": 2,
+        "isPublic": true
+      },
+      "replies": {
+        "comments": [
+          {
+            "kind": "youtube#comment",
+            "etag": "\"rEpLy1EtAg\"",
+            "id": "UgzD_xYzRickAstley001.reply1",
+            "snippet": {
+              "textDisplay": "Totally agreed! 60MB RAM usage is unbelievable.",
+              "textOriginal": "Totally agreed! 60MB RAM usage is unbelievable.",
+              "authorDisplayName": "RustDev2026",
+              "authorProfileImageUrl": "https://yt3.ggpht.com/avatar_user2.jpg",
+              "authorChannelId": { "value": "UC_user2" },
+              "likeCount": 89,
+              "publishedAt": "2026-01-02T09:10:00Z",
+              "updatedAt": "2026-01-02T09:10:00Z"
+            }
+          },
+          {
+            "kind": "youtube#comment",
+            "etag": "\"rEpLy2EtAg\"",
+            "id": "UgzD_xYzRickAstley001.reply2",
+            "snippet": {
+              "textDisplay": "Дуже гарно працює на старому iMac!",
+              "textOriginal": "Дуже гарно працює на старому iMac!",
+              "authorDisplayName": "Тарас Коваленко",
+              "authorProfileImageUrl": "https://yt3.ggpht.com/avatar_user3.jpg",
+              "authorChannelId": { "value": "UC_user3" },
+              "likeCount": 34,
+              "publishedAt": "2026-01-02T12:45:00Z",
+              "updatedAt": "2026-01-02T12:45:00Z"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "youtube#commentThread",
+      "etag": "\"tHrEaD2EtAg\"",
+      "id": "UgzD_xYzRickAstley002",
+      "snippet": {
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "videoId": "dQw4w9WgXcQ",
+        "topLevelComment": {
+          "kind": "youtube#comment",
+          "etag": "\"cOmMeNt2EtAg\"",
+          "id": "UgzD_xYzRickAstley002",
+          "snippet": {
+            "textDisplay": "Who is listening in November 2026?",
+            "textOriginal": "Who is listening in November 2026?",
+            "authorDisplayName": "MusicLover",
+            "authorProfileImageUrl": "https://yt3.ggpht.com/avatar_user4.jpg",
+            "authorChannelId": { "value": "UC_user4" },
+            "likeCount": 420,
+            "publishedAt": "2026-11-20T10:00:00Z",
+            "updatedAt": "2026-11-20T10:00:00Z"
+          }
+        },
+        "canReply": true,
+        "totalReplyCount": 0,
+        "isPublic": true
+      }
+    }
+  ]
+}

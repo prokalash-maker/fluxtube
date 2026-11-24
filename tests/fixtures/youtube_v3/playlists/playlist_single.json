@@ -1,0 +1,19 @@
+{
+  "kind": "youtube#playlist",
+  "etag": "\"nEwPlAyLiStEtAg\"",
+  "id": "PL_NEWLY_CREATED_999",
+  "snippet": {
+    "publishedAt": "2026-11-24T13:00:00Z",
+    "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+    "title": "Newly Created FluxTube Playlist",
+    "description": "Playlist created via FluxTube desktop client.",
+    "thumbnails": {},
+    "channelTitle": "FluxTube User"
+  },
+  "status": {
+    "privacyStatus": "private"
+  },
+  "contentDetails": {
+    "itemCount": 0
+  }
+}

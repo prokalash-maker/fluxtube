@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "FluxTube",
+    "description": "Легковесный клиент YouTube на Rust"
+  },
+  "nav": {
+    "home": "Главная",
+    "trending": "В тренде",
+    "subscriptions": "Подписки",
+    "library": "Библиотека",
+    "history": "История",
+    "settings": "Настройки",
+    "diagnostics": "Диагностика"
+  },
+  "player": {
+    "play": "Воспроизвести",
+    "pause": "Пауза",
+    "quality": "Качество: {quality}",
+    "speed": "Скорость: {speed}x",
+    "mute": "Выключить звук",
+    "unmute": "Включить звук",
+    "fullscreen": "Полноэкранный режим",
+    "theater_mode": "Режим кинотеатра",
+    "seek_forward": "Вперед на {seconds}с",
+    "seek_backward": "Назад на {seconds}с"
+  },
+  "settings": {
+    "title": "Настройки",
+    "general": "Общие",
+    "appearance": "Внешний вид",
+    "performance": "Производительность",
+    "language": "Язык",
+    "theme": "Тема",
+    "profile": {
+      "ultralite": "Ультра Легкий",
+      "balanced": "Сбалансированный",
+      "high_quality": "Высокое качество",
+      "custom": "Пользовательский"
+    },
+    "hardware_acceleration": "Аппаратное ускорение",
+    "h264ify": "Принудительный H.264 (снижение нагрузки CPU)",
+    "cache_size": "Размер кэша: {mb} МБ"
+  },
+  "diagnostics": {
+    "title": "Центр диагностики",
+    "cpu": "Загрузка CPU: {percent}%",
+    "memory": "ОЗУ: {used} МБ / {total} МБ",
+    "process_rss": "ОЗУ FluxTube: {rss} МБ",
+    "uptime": "Время работы: {uptime} секунд",
+    "export_report": "Экспортировать отчет диагностики"
+  },
+  "auth": {
+    "login": "Войти",
+    "logout": "Выйти",
+    "guest": "Гостевой режим",
+    "switch_account": "Сменить аккаунт"
+  },
+  "history": {
+    "title": "История просмотров",
+    "clear": "Очистить историю",
+    "empty": "История просмотров пуста"
+  },
+  "quota": {
+    "used": "Квота API: {used} / {limit}",
+    "exhausted": "Дневная квота API исчерпана"
+  }
+}

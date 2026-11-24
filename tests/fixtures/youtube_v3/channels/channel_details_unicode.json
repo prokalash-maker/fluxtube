@@ -1,0 +1,47 @@
+{
+  "kind": "youtube#channelListResponse",
+  "etag": "\"uNiCoDeChAnNeLEtAg123\"",
+  "pageInfo": {
+    "totalResults": 1,
+    "resultsPerPage": 1
+  },
+  "items": [
+    {
+      "kind": "youtube#channel",
+      "etag": "\"uNiCoDeChAnNeLItEm\"",
+      "id": "UCnKz_L_g_xY9ZzQ",
+      "snippet": {
+        "title": "Суспільне Новини — FluxTube UA 🇺🇦",
+        "description": "Офіційний інформаційний канал. Перевірені новини про події в Україні та світі.",
+        "customUrl": "@suspilne_flux",
+        "publishedAt": "2018-05-12T09:15:00Z",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/ua_avatar_88.jpg", "width": 88, "height": 88 },
+          "medium": { "url": "https://yt3.ggpht.com/ua_avatar_240.jpg", "width": 240, "height": 240 },
+          "high": { "url": "https://yt3.ggpht.com/ua_avatar_800.jpg", "width": 800, "height": 800 }
+        },
+        "country": "UA"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UUnKz_L_g_xY9ZzQ"
+        }
+      },
+      "statistics": {
+        "viewCount": "987654321",
+        "subscriberCount": "1890000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "3200"
+      },
+      "brandingSettings": {
+        "channel": {
+          "title": "Суспільне Новини",
+          "country": "UA"
+        },
+        "image": {
+          "bannerExternalUrl": "https://yt3.googleusercontent.com/banner_suspilne_wide.jpg"
+        }
+      }
+    }
+  ]
+}

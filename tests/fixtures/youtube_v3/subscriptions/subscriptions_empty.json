@@ -1,0 +1,9 @@
+{
+  "kind": "youtube#subscriptionListResponse",
+  "etag": "\"eMpTySuBsEtAg00000\"",
+  "pageInfo": {
+    "totalResults": 0,
+    "resultsPerPage": 50
+  },
+  "items": []
+}

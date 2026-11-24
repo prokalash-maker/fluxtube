@@ -1,0 +1,32 @@
+{
+  "kind": "youtube#channelListResponse",
+  "etag": "\"hIdDeNsUbSEtAg\"",
+  "pageInfo": {
+    "totalResults": 1,
+    "resultsPerPage": 1
+  },
+  "items": [
+    {
+      "kind": "youtube#channel",
+      "etag": "\"hIdDeNsUbSItEm\"",
+      "id": "UChIdDeNsUbScHiD12345",
+      "snippet": {
+        "title": "Anonymous Tech Channel",
+        "description": "Tech reviews with private subscriber count.",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/anon_default.jpg", "width": 88, "height": 88 }
+        }
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "uploads": "UUhIdDeNsUbScHiD12345"
+        }
+      },
+      "statistics": {
+        "viewCount": "150000",
+        "hiddenSubscriberCount": true,
+        "videoCount": "12"
+      }
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "\"a1b2c3d4e5f6g7h8i9j0k1l2m3n\"",
+  "nextPageToken": "CBkQAA",
+  "prevPageToken": "CAUQAQ",
+  "regionCode": "US",
+  "pageInfo": {
+    "totalResults": 1000000,
+    "resultsPerPage": 3
+  },
+  "items": [
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"x8y9z0a1b2c3d4e5f6g7h8i9j0k\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "M7lc1UVf-VE"
+      },
+      "snippet": {
+        "publishedAt": "2015-05-18T16:00:00Z",
+        "channelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+        "title": "YouTube Developers Live: IFrame API Tips & Tricks",
+        "description": "Learn how to embed YouTube videos cleanly in desktop and web wrappers.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/M7lc1UVf-VE/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/M7lc1UVf-VE/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/M7lc1UVf-VE/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Google Developers",
+        "liveBroadcastContent": "none",
+        "publishTime": "2015-05-18T16:00:00Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"p1o2i3u4y5t6r7e8w9q0a1s2d3f\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "jNQXAC9IVRw"
+      },
+      "snippet": {
+        "publishedAt": "2005-04-24T03:31:52Z",
+        "channelId": "UC4QobU6ST3KWZCmTQ451W3w",
+        "title": "Me at the zoo",
+        "description": "The first video on YouTube. Uploaded by Jawed Karim.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/jNQXAC9IVRw/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/jNQXAC9IVRw/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "jawed",
+        "liveBroadcastContent": "none",
+        "publishTime": "2005-04-24T03:31:52Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"l9k8j7h6g5f4d3s2a1q0w9e8r7t\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "C0DPdy98e4c"
+      },
+      "snippet": {
+        "publishedAt": "2020-09-01T12:00:00Z",
+        "channelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+        "title": "Building High Performance Rust GUIs with Iced",
+        "description": "Deep architectural analysis of cross-platform Rust user interfaces.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/C0DPdy98e4c/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/C0DPdy98e4c/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/C0DPdy98e4c/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Rust Developers",
+        "liveBroadcastContent": "none",
+        "publishTime": "2020-09-01T12:00:00Z"
+      }
+    }
+  ]
+}

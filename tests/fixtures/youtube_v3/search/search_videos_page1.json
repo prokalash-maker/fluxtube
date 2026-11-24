@@ -1,0 +1,122 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "\"m2ZfSFDuhAlOP7fYRWCLKHgKaLE\"",
+  "nextPageToken": "CAUQAA",
+  "regionCode": "US",
+  "pageInfo": {
+    "totalResults": 1000000,
+    "resultsPerPage": 5
+  },
+  "items": [
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"8jA0255w8gLwQ_yL7n5i0tK8_00\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "dQw4w9WgXcQ"
+      },
+      "snippet": {
+        "publishedAt": "2009-10-25T06:57:33Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+        "description": "The official video for “Never Gonna Give You Up” by Rick Astley. Taken from the album ‘Whenever You Need Somebody’.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Rick Astley",
+        "liveBroadcastContent": "none",
+        "publishTime": "2009-10-25T06:57:33Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"fVfKzO_V9wKj3sL4k1m8n0p7q2r\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "9bZkp7q19f0"
+      },
+      "snippet": {
+        "publishedAt": "2012-07-15T07:46:32Z",
+        "channelId": "UCrDkAvwZum-UTjHmzDI2iIw",
+        "title": "PSY - GANGNAM STYLE(강남스타일) M/V",
+        "description": "PSY - ‘Gangnam Style’ M/V celebration for 5 Billion views!",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "officialpsy",
+        "liveBroadcastContent": "none",
+        "publishTime": "2012-07-15T07:46:32Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"tYm3bLk8w0n9qP1r4s5v7x8z2a3\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "kJQP7kiw5Fk"
+      },
+      "snippet": {
+        "publishedAt": "2017-01-12T21:00:01Z",
+        "channelId": "UC0C-w0YjGpqDXGB8Tr0660A",
+        "title": "Luis Fonsi - Despacito ft. Daddy Yankee",
+        "description": "Despacito disponible en todas las plataformas digitales.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/kJQP7kiw5Fk/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/kJQP7kiw5Fk/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "LuisFonsiVEVO",
+        "liveBroadcastContent": "none",
+        "publishTime": "2017-01-12T21:00:01Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"bNm8v9c0x1z2a3s4d5f6g7h8j9k\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "fJ9rUzIMcZQ"
+      },
+      "snippet": {
+        "publishedAt": "2004-04-24T03:31:52Z",
+        "channelId": "UC4QobU6ST3KWZCmTQ451W3w",
+        "title": "Queen – Bohemian Rhapsody (Official Video Remastered)",
+        "description": "The official ‘Bohemian Rhapsody’ music video. Taken from ‘A Night At The Opera’, 1975.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/fJ9rUzIMcZQ/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/fJ9rUzIMcZQ/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/fJ9rUzIMcZQ/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Queen Official",
+        "liveBroadcastContent": "none",
+        "publishTime": "2004-04-24T03:31:52Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"mKj7h6g5f4d3s2a1q0w9e8r7t6y\"",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "L_LUpnjgPso"
+      },
+      "snippet": {
+        "publishedAt": "2024-01-10T14:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rust Programming for Beginners — 2026 Crash Course",
+        "description": "Comprehensive tutorial on systems programming with Rust, Iced GUI, and memory safety.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Rust Academy",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-01-10T14:00:00Z"
+      }
+    }
+  ]
+}

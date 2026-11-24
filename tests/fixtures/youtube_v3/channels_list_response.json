@@ -1,0 +1,50 @@
+{
+  "kind": "youtube#channelListResponse",
+  "etag": "\"cHaNnElLiStEtAg12345\"",
+  "pageInfo": {
+    "totalResults": 1,
+    "resultsPerPage": 1
+  },
+  "items": [
+    {
+      "kind": "youtube#channel",
+      "etag": "\"cHaNnElPrImArYEtAg\"",
+      "id": "UCuAXFkgsw1L7xaCfnd5JJOw",
+      "snippet": {
+        "title": "Rick Astley",
+        "description": "Official YouTube channel for Rick Astley.",
+        "customUrl": "@rickastley",
+        "publishedAt": "2007-01-24T18:28:44Z",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/avatar_default.jpg", "width": 88, "height": 88 },
+          "medium": { "url": "https://yt3.ggpht.com/avatar_medium.jpg", "width": 240, "height": 240 },
+          "high": { "url": "https://yt3.ggpht.com/avatar_high.jpg", "width": 800, "height": 800 }
+        },
+        "country": "GB"
+      },
+      "contentDetails": {
+        "relatedPlaylists": {
+          "likes": "",
+          "uploads": "UUuAXFkgsw1L7xaCfnd5JJOw"
+        }
+      },
+      "statistics": {
+        "viewCount": "2345678901",
+        "subscriberCount": "3450000",
+        "hiddenSubscriberCount": false,
+        "videoCount": "142"
+      },
+      "brandingSettings": {
+        "channel": {
+          "title": "Rick Astley",
+          "description": "Official YouTube channel for Rick Astley.",
+          "keywords": "rick astley music pop 80s",
+          "country": "GB"
+        },
+        "image": {
+          "bannerExternalUrl": "https://yt3.googleusercontent.com/banner_rick_astley_wide.jpg"
+        }
+      }
+    }
+  ]
+}

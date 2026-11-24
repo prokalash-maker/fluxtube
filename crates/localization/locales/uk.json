@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "FluxTube",
+    "description": "Легкий клієнт YouTube на Rust"
+  },
+  "nav": {
+    "home": "Головна",
+    "trending": "Популярне",
+    "subscriptions": "Підписки",
+    "library": "Бібліотека",
+    "history": "Історія",
+    "settings": "Налаштування",
+    "diagnostics": "Діагностика"
+  },
+  "player": {
+    "play": "Відтворити",
+    "pause": "Пауза",
+    "quality": "Якість: {quality}",
+    "speed": "Швидкість: {speed}x",
+    "mute": "Вимкнути звук",
+    "unmute": "Увімкнути звук",
+    "fullscreen": "Повноекранний режим",
+    "theater_mode": "Режим кінотеатру",
+    "seek_forward": "Вперед на {seconds}с",
+    "seek_backward": "Назад на {seconds}с"
+  },
+  "settings": {
+    "title": "Налаштування",
+    "general": "Загальні",
+    "appearance": "Зовнішній вигляд",
+    "performance": "Продуктивність",
+    "language": "Мова",
+    "theme": "Тема",
+    "profile": {
+      "ultralite": "Ультра Легкий",
+      "balanced": "Збалансований",
+      "high_quality": "Висока якість",
+      "custom": "Користувацький"
+    },
+    "hardware_acceleration": "Апаратне прискорення",
+    "h264ify": "Примусовий H.264 (менше навантаження ЦП)",
+    "cache_size": "Розмір кешу: {mb} МБ"
+  },
+  "diagnostics": {
+    "title": "Центр діагностики",
+    "cpu": "Використання ЦП: {percent}%",
+    "memory": "ОЗП: {used} МБ / {total} МБ",
+    "process_rss": "ОЗП FluxTube: {rss} МБ",
+    "uptime": "Час роботи: {uptime} секунд",
+    "export_report": "Експортувати звіт діагностики"
+  },
+  "auth": {
+    "login": "Увійти",
+    "logout": "Вийти",
+    "guest": "Гостьовий режим",
+    "switch_account": "Змінити обліковий запис"
+  },
+  "history": {
+    "title": "Історія переглядів",
+    "clear": "Очистити історію",
+    "empty": "Історія переглядів порожня"
+  },
+  "quota": {
+    "used": "Квота API: {used} / {limit}",
+    "exhausted": "Денну квоту API вичерпано"
+  }
+}

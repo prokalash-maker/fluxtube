@@ -1,0 +1,10 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "\"eMpTySeArChEtAg00000000000000\"",
+  "regionCode": "US",
+  "pageInfo": {
+    "totalResults": 0,
+    "resultsPerPage": 25
+  },
+  "items": []
+}

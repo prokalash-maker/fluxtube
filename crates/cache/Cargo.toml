@@ -1,0 +1,22 @@
+[package]
+name = "fluxtube-cache"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+fluxtube-core = { workspace = true }
+image = { workspace = true }
+rayon = { workspace = true }
+sha2 = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+tokio = { version = "1.38", features = ["sync", "fs", "io-util", "rt"] }
+async-trait = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["default-tls"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio = { version = "1.38", features = ["macros", "rt-multi-thread"] }

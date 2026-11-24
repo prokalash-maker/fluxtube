@@ -1,0 +1,55 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "\"pLaYlIsTsEaRcHeTaG\"",
+  "regionCode": "US",
+  "pageInfo": {
+    "totalResults": 2,
+    "resultsPerPage": 2
+  },
+  "items": [
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"pLiTeM1EtAg\"",
+      "id": {
+        "kind": "youtube#playlist",
+        "playlistId": "PL1234567890ABCDEF"
+      },
+      "snippet": {
+        "publishedAt": "2021-05-10T10:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rick Astley – Greatest Hits Collection",
+        "description": "Every single hit remastered in high definition.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Rick Astley",
+        "liveBroadcastContent": "none",
+        "publishTime": "2021-05-10T10:00:00Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"pLiTeM2EtAg\"",
+      "id": {
+        "kind": "youtube#playlist",
+        "playlistId": "PL9876543210FEDCBA"
+      },
+      "snippet": {
+        "publishedAt": "2023-08-15T08:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rust Programming 2026 Walkthroughs",
+        "description": "Deep dive into async Tokio, Iced architectures, and native packaging.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Rust Academy",
+        "liveBroadcastContent": "none",
+        "publishTime": "2023-08-15T08:00:00Z"
+      }
+    }
+  ]
+}

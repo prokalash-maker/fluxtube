@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FluxTube Player Embed</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000000;
+    }
+    #player {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: none;
+    }
+  </style>
+  <script>
+    // In-page h264ify fallback shim
+    (function() {
+      'use strict';
+      var BLOCKED = /vp8|vp9|vp09|av01|av1/i;
+      var WEBM_VID = /^video\/webm/i;
+
+      if (window.HTMLMediaElement && window.HTMLMediaElement.prototype) {
+        var origCanPlay = window.HTMLMediaElement.prototype.canPlayType;
+        window.HTMLMediaElement.prototype.canPlayType = function(type) {
+          if (typeof type === 'string') {
+            if (BLOCKED.test(type) || WEBM_VID.test(type)) return '';
+            if (/avc1/i.test(type)) {
+              var r = origCanPlay.call(this, type);
+              return r ? r : 'probably';
+            }
+          }
+          return origCanPlay.call(this, type);
+        };
+      }
+
+      function patchMSE(ms) {
+        if (!ms || !ms.isTypeSupported) return;
+        var origIsSupported = ms.isTypeSupported.bind(ms);
+        ms.isTypeSupported = function(type) {
+          if (typeof type === 'string') {
+            if (BLOCKED.test(type) || WEBM_VID.test(type)) return false;
+            if (/avc1/i.test(type)) return true;
+          }
+          return origIsSupported(type);
+        };
+      }
+      if (window.MediaSource) patchMSE(window.MediaSource);
+      if (window.WebKitMediaSource) patchMSE(window.WebKitMediaSource);
+    })();
+  </script>
+</head>
+<body>
+  <div id="player"></div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var player = null;
+      var isReady = false;
+      var queuedCommand = null;
+      var pollTimer = null;
+
+      function postIpc(type, data) {
+        if (window.ipc && window.ipc.postMessage) {
+          try {
+            window.ipc.postMessage(JSON.stringify({ type: type, data: data || {} }));
+          } catch (e) {
+            console.error('[FluxTube Embed] IPC postMessage error:', e);
+          }
+        }
+      }
+
+      function startPolling() {
+        stopPolling();
+        pollTimer = setInterval(function() {
+          if (player && isReady && typeof player.getCurrentTime === 'function') {
+            var cur = player.getCurrentTime() || 0;
+            var dur = player.getDuration() || 0;
+            postIpc('time_updated', { position: cur, duration: dur });
+          }
+        }, 250);
+      }
+
+      function stopPolling() {
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      }
+
+      window.onYouTubeIframeAPIReady = function() {
+        player = new YT.Player('player', {
+          height: '100%',
+          width: '100%',
+          playerVars: {
+            'autoplay': 1,
+            'controls': 1,
+            'rel': 0,
+            'playsinline': 1,
+            'modestbranding': 1,
+            'enablejsapi': 1,
+            'iv_load_policy': 3,
+            'origin': window.location.origin && window.location.origin !== 'null'
+              ? window.location.origin
+              : 'https://www.youtube-nocookie.com'
+          },
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange,
+            'onPlaybackQualityChange': onQualityChange,
+            'onPlaybackRateChange': onRateChange,
+            'onError': onPlayerError
+          }
+        });
+      };
+
+      function onPlayerReady(event) {
+        isReady = true;
+        var dur = 0;
+        var rates = [1.0];
+        var qualities = ['auto'];
+        try {
+          dur = player.getDuration() || 0;
+          rates = player.getAvailablePlaybackRates() || [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+          qualities = player.getAvailableQualityLevels() || ['auto'];
+        } catch (_) {}
+
+        postIpc('ready', {
+          duration: dur,
+          available_rates: rates,
+          available_qualities: qualities
+        });
+
+        if (queuedCommand) {
+          var cmd = queuedCommand;
+          queuedCommand = null;
+          window.FluxPlayer.dispatch(cmd);
+        }
+      }
+
+      function onPlayerStateChange(event) {
+        var stateMap = {
+          '-1': 'unstarted',
+          '0': 'ended',
+          '1': 'playing',
+          '2': 'paused',
+          '3': 'buffering',
+          '5': 'cued'
+        };
+        var st = stateMap[event.data] || 'idle';
+        postIpc('state_changed', { state: st });
+
+        if (event.data === 1) {
+          startPolling();
+        } else {
+          stopPolling();
+          if (player && typeof player.getCurrentTime === 'function') {
+            postIpc('time_updated', {
+              position: player.getCurrentTime() || 0,
+              duration: player.getDuration() || 0
+            });
+          }
+        }
+      }
+
+      function onQualityChange(event) {
+        postIpc('quality_changed', { quality: event.data });
+      }
+
+      function onRateChange(event) {
+        postIpc('rate_changed', { rate: event.data });
+      }
+
+      function onPlayerError(event) {
+        var msg = 'Unknown YouTube player error';
+        switch (event.data) {
+          case 2: msg = 'Invalid parameter in request'; break;
+          case 5: msg = 'HTML5 player playback failure'; break;
+          case 100: msg = 'Video not found or removed'; break;
+          case 101:
+          case 150: msg = 'Embedding restricted by content owner'; break;
+        }
+        postIpc('error', { code: event.data, message: msg });
+      }
+
+      window.FluxPlayer = {
+        dispatch: function(cmd) {
+          if (!cmd || !cmd.action) return;
+          if (!isReady || !player) {
+            queuedCommand = cmd;
+            return;
+          }
+          var p = cmd.payload || {};
+          try {
+            switch (cmd.action) {
+              case 'load':
+                var vid = p.video_id;
+                var start = p.start_at_secs || 0;
+                if (p.autoplay !== false) {
+                  player.loadVideoById({ videoId: vid, startSeconds: start });
+                } else {
+                  player.cueVideoById({ videoId: vid, startSeconds: start });
+                }
+                break;
+              case 'unload':
+                stopPolling();
+                player.stopVideo();
+                player.clearVideo();
+                postIpc('state_changed', { state: 'unstarted' });
+                break;
+              case 'play':
+                player.playVideo();
+                break;
+              case 'pause':
+                player.pauseVideo();
+                break;
+              case 'toggle_play':
+                if (player.getPlayerState() === 1) {
+                  player.pauseVideo();
+                } else {
+                  player.playVideo();
+                }
+                break;
+              case 'seek':
+                player.seekTo(p.position_secs || 0, true);
+                break;
+              case 'seek_by':
+                var cur = player.getCurrentTime() || 0;
+                var delta = p.forward ? (p.offset_secs || 5) : -(p.offset_secs || 5);
+                player.seekTo(Math.max(0, cur + delta), true);
+                break;
+              case 'set_volume':
+                player.setVolume(Math.round((p.volume || 1.0) * 100));
+                var isMuted = player.isMuted();
+                postIpc('volume_changed', { volume: p.volume, muted: isMuted });
+                break;
+              case 'set_muted':
+                if (p.muted) player.mute(); else player.unMute();
+                var vol = (player.getVolume() || 100) / 100.0;
+                postIpc('volume_changed', { volume: vol, muted: !!p.muted });
+                break;
+              case 'toggle_mute':
+                if (player.isMuted()) player.unMute(); else player.mute();
+                var curVol = (player.getVolume() || 100) / 100.0;
+                postIpc('volume_changed', { volume: curVol, muted: player.isMuted() });
+                break;
+              case 'set_playback_rate':
+                player.setPlaybackRate(p.rate || 1.0);
+                break;
+              case 'set_playback_quality':
+                if (p.quality && typeof player.setPlaybackQuality === 'function') {
+                  player.setPlaybackQuality(p.quality);
+                }
+                break;
+            }
+          } catch (e) {
+            console.error('[FluxTube Embed] Command dispatch error:', cmd.action, e);
+            postIpc('error', { code: -2, message: e.toString() });
+          }
+        }
+      };
+
+      // Load YouTube IFrame API script with network fallback
+      var apiTag = document.createElement('script');
+      apiTag.src = 'https://www.youtube.com/iframe_api';
+      apiTag.onerror = function() {
+        postIpc('error', {
+          code: -1,
+          message: 'Failed to load YouTube IFrame API (offline or network blocked)'
+        });
+      };
+      document.head.appendChild(apiTag);
+    })();
+  </script>
+</body>
+</html>

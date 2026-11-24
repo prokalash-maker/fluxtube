@@ -1,0 +1,221 @@
+{
+  "kind": "youtube#videoListResponse",
+  "etag": "\"vIdEoLiStBaTcH1234567890\"",
+  "pageInfo": {
+    "totalResults": 5,
+    "resultsPerPage": 5
+  },
+  "items": [
+    {
+      "kind": "youtube#video",
+      "etag": "\"vIdEoItEm1EtAg\"",
+      "id": "dQw4w9WgXcQ",
+      "snippet": {
+        "publishedAt": "2009-10-25T06:57:33Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+        "description": "The official video for “Never Gonna Give You Up” by Rick Astley.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "width": 480, "height": 360 },
+          "standard": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/sddefault.jpg", "width": 640, "height": 480 },
+          "maxres": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", "width": 1280, "height": 720 }
+        },
+        "channelTitle": "Rick Astley",
+        "tags": ["rick astley", "never gonna give you up", "pop"],
+        "categoryId": "10",
+        "liveBroadcastContent": "none",
+        "defaultLanguage": "en",
+        "localized": {
+          "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+          "description": "The official video for “Never Gonna Give You Up” by Rick Astley."
+        }
+      },
+      "contentDetails": {
+        "duration": "PT3M33S",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "true",
+        "licensedContent": true,
+        "projection": "rectangular"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "license": "youtube",
+        "embeddable": true,
+        "publicStatsViewable": true,
+        "madeForKids": false
+      },
+      "statistics": {
+        "viewCount": "1549281920",
+        "likeCount": "17384910",
+        "favoriteCount": "0",
+        "commentCount": "2498120"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"vIdEoItEm2EtAg\"",
+      "id": "9bZkp7q19f0",
+      "snippet": {
+        "publishedAt": "2012-07-15T07:46:32Z",
+        "channelId": "UCrDkAvwZum-UTjHmzDI2iIw",
+        "title": "PSY - GANGNAM STYLE(강남스타일) M/V",
+        "description": "PSY - ‘Gangnam Style’ M/V.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "officialpsy",
+        "categoryId": "10",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT4M13S",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "true",
+        "licensedContent": true,
+        "projection": "rectangular"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "license": "youtube",
+        "embeddable": true,
+        "publicStatsViewable": true,
+        "madeForKids": false
+      },
+      "statistics": {
+        "viewCount": "5124000100",
+        "likeCount": "28100500",
+        "favoriteCount": "0",
+        "commentCount": "5400200"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"vIdEoItEm3EtAg\"",
+      "id": "L_LUpnjgPso",
+      "snippet": {
+        "publishedAt": "2024-01-10T14:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Full Rust Deep Dive Course (Long Duration)",
+        "description": "Over an hour of pure Rust compiler internals and async execution.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Rust Academy",
+        "categoryId": "28",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT1H12M45S",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "projection": "rectangular"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "license": "youtube",
+        "embeddable": true,
+        "publicStatsViewable": true,
+        "madeForKids": false
+      },
+      "statistics": {
+        "viewCount": "45210",
+        "likeCount": "3210",
+        "favoriteCount": "0",
+        "commentCount": "184"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"vIdEoItEm4EtAg\"",
+      "id": "jNQXAC9IVRw",
+      "snippet": {
+        "publishedAt": "2005-04-24T03:31:52Z",
+        "channelId": "UC4QobU6ST3KWZCmTQ451W3w",
+        "title": "Me at the zoo",
+        "description": "Short duration clip.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/jNQXAC9IVRw/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "jawed",
+        "categoryId": "19",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT45S",
+        "dimension": "2d",
+        "definition": "sd",
+        "caption": "false",
+        "licensedContent": false,
+        "projection": "rectangular"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "license": "youtube",
+        "embeddable": true,
+        "publicStatsViewable": true,
+        "madeForKids": false
+      },
+      "statistics": {
+        "viewCount": "315400000",
+        "likeCount": "16200000",
+        "favoriteCount": "0",
+        "commentCount": "11200000"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "\"vIdEoItEm5EtAg\"",
+      "id": "LIVE_STREAM_ID",
+      "snippet": {
+        "publishedAt": "2026-01-01T00:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "FluxTube Live 24/7 Stream",
+        "description": "Continuous broadcast test with zero duration.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/live/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/live/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/live/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "FluxTube Team",
+        "categoryId": "28",
+        "liveBroadcastContent": "live"
+      },
+      "contentDetails": {
+        "duration": "PT0S",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "projection": "rectangular"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "license": "youtube",
+        "embeddable": true,
+        "publicStatsViewable": true,
+        "madeForKids": false
+      },
+      "statistics": {
+        "viewCount": "9800",
+        "likeCount": "850",
+        "favoriteCount": "0",
+        "commentCount": "42"
+      }
+    }
+  ]
+}

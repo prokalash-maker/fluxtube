@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "FluxTube",
+    "description": "Lightweight YouTube client in Rust"
+  },
+  "nav": {
+    "home": "Home",
+    "trending": "Trending",
+    "subscriptions": "Subscriptions",
+    "library": "Library",
+    "history": "History",
+    "settings": "Settings",
+    "diagnostics": "Diagnostics"
+  },
+  "player": {
+    "play": "Play",
+    "pause": "Pause",
+    "quality": "Quality: {quality}",
+    "speed": "Speed: {speed}x",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "fullscreen": "Fullscreen",
+    "theater_mode": "Theater Mode",
+    "seek_forward": "Seek Forward {seconds}s",
+    "seek_backward": "Seek Backward {seconds}s"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "appearance": "Appearance",
+    "performance": "Performance",
+    "language": "Language",
+    "theme": "Theme",
+    "profile": {
+      "ultralite": "Ultra Lite",
+      "balanced": "Balanced",
+      "high_quality": "High Quality",
+      "custom": "Custom"
+    },
+    "hardware_acceleration": "Hardware Acceleration",
+    "h264ify": "Force H.264 (Lower CPU)",
+    "cache_size": "Cache Size: {mb} MB"
+  },
+  "diagnostics": {
+    "title": "Diagnostics Center",
+    "cpu": "CPU Usage: {percent}%",
+    "memory": "RAM: {used} MB / {total} MB",
+    "process_rss": "FluxTube RSS: {rss} MB",
+    "uptime": "Uptime: {uptime} seconds",
+    "export_report": "Export Diagnostic Report"
+  },
+  "auth": {
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "guest": "Guest Mode",
+    "switch_account": "Switch Account"
+  },
+  "history": {
+    "title": "Watch History",
+    "clear": "Clear History",
+    "empty": "No watch history yet"
+  },
+  "quota": {
+    "used": "API Quota: {used} / {limit}",
+    "exhausted": "Daily API Quota Exhausted"
+  }
+}

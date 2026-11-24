@@ -1,0 +1,59 @@
+{
+  "kind": "youtube#subscriptionListResponse",
+  "etag": "\"sUbScRiPtIoNsPaGe1EtAg\"",
+  "nextPageToken": "CDIQAQ",
+  "pageInfo": {
+    "totalResults": 50,
+    "resultsPerPage": 2
+  },
+  "items": [
+    {
+      "kind": "youtube#subscription",
+      "etag": "\"sUb1EtAg\"",
+      "id": "sUbScRiPtIoN_ID_001",
+      "snippet": {
+        "publishedAt": "2022-03-01T08:00:00Z",
+        "title": "Rick Astley",
+        "description": "Official YouTube channel for Rick Astley.",
+        "resourceId": {
+          "kind": "youtube#channel",
+          "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw"
+        },
+        "channelId": "UC_CURRENT_USER_ID",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/avatar_default.jpg", "width": 88, "height": 88 },
+          "medium": { "url": "https://yt3.ggpht.com/avatar_medium.jpg", "width": 240, "height": 240 },
+          "high": { "url": "https://yt3.ggpht.com/avatar_high.jpg", "width": 800, "height": 800 }
+        }
+      },
+      "contentDetails": {
+        "totalItemCount": 142,
+        "newItemCount": 2,
+        "activityType": "all"
+      }
+    },
+    {
+      "kind": "youtube#subscription",
+      "etag": "\"sUb2EtAg\"",
+      "id": "sUbScRiPtIoN_ID_002",
+      "snippet": {
+        "publishedAt": "2023-01-15T10:00:00Z",
+        "title": "Суспільне Новини — FluxTube UA",
+        "description": "Новини України.",
+        "resourceId": {
+          "kind": "youtube#channel",
+          "channelId": "UCnKz_L_g_xY9ZzQ"
+        },
+        "channelId": "UC_CURRENT_USER_ID",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/ua_avatar_88.jpg", "width": 88, "height": 88 }
+        }
+      },
+      "contentDetails": {
+        "totalItemCount": 3200,
+        "newItemCount": 5,
+        "activityType": "all"
+      }
+    }
+  ]
+}

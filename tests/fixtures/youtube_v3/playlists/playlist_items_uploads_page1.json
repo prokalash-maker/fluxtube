@@ -1,0 +1,103 @@
+{
+  "kind": "youtube#playlistItemListResponse",
+  "etag": "\"uPlOaDsPaGe1EtAg\"",
+  "nextPageToken": "EAAaBlBUOkNBVQ",
+  "pageInfo": {
+    "totalResults": 142,
+    "resultsPerPage": 3
+  },
+  "items": [
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "\"pLiTeM_dQw4w9WgXcQ\"",
+      "id": "UEx1QUxGa2dzdzFMN3hhQ2ZuZDVKSk93LjEyMzQ1",
+      "snippet": {
+        "publishedAt": "2024-05-01T12:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+        "description": "Official video remaster.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Rick Astley",
+        "playlistId": "UUuAXFkgsw1L7xaCfnd5JJOw",
+        "position": 0,
+        "resourceId": {
+          "kind": "youtube#video",
+          "videoId": "dQw4w9WgXcQ"
+        },
+        "videoOwnerChannelTitle": "Rick Astley",
+        "videoOwnerChannelId": "UCuAXFkgsw1L7xaCfnd5JJOw"
+      },
+      "contentDetails": {
+        "videoId": "dQw4w9WgXcQ",
+        "videoPublishedAt": "2009-10-25T06:57:33Z"
+      },
+      "status": {
+        "privacyStatus": "public"
+      }
+    },
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "\"pLiTeM_L_LUpnjgPso\"",
+      "id": "UEx1QUxGa2dzdzFMN3hhQ2ZuZDVKSk93LjY3ODkw",
+      "snippet": {
+        "publishedAt": "2024-04-10T14:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rust Programming for Beginners — 2026 Crash Course",
+        "description": "Systems programming tutorial.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Rick Astley",
+        "playlistId": "UUuAXFkgsw1L7xaCfnd5JJOw",
+        "position": 1,
+        "resourceId": {
+          "kind": "youtube#video",
+          "videoId": "L_LUpnjgPso"
+        },
+        "videoOwnerChannelTitle": "Rick Astley",
+        "videoOwnerChannelId": "UCuAXFkgsw1L7xaCfnd5JJOw"
+      },
+      "contentDetails": {
+        "videoId": "L_LUpnjgPso",
+        "videoPublishedAt": "2024-01-10T14:00:00Z"
+      },
+      "status": {
+        "privacyStatus": "public"
+      }
+    },
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "\"pLiTeM_C0DPdy98e4c\"",
+      "id": "UEx1QUxGa2dzdzFMN3hhQ2ZuZDVKSk93LjExMjIz",
+      "snippet": {
+        "publishedAt": "2024-03-01T10:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Building High Performance Rust GUIs with Iced",
+        "description": "Iced GUI crash course.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/C0DPdy98e4c/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "Rick Astley",
+        "playlistId": "UUuAXFkgsw1L7xaCfnd5JJOw",
+        "position": 2,
+        "resourceId": {
+          "kind": "youtube#video",
+          "videoId": "C0DPdy98e4c"
+        },
+        "videoOwnerChannelTitle": "Rick Astley",
+        "videoOwnerChannelId": "UCuAXFkgsw1L7xaCfnd5JJOw"
+      },
+      "contentDetails": {
+        "videoId": "C0DPdy98e4c",
+        "videoPublishedAt": "2020-09-01T12:00:00Z"
+      },
+      "status": {
+        "privacyStatus": "public"
+      }
+    }
+  ]
+}

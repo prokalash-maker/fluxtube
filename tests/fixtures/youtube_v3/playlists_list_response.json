@@ -1,0 +1,55 @@
+{
+  "kind": "youtube#playlistListResponse",
+  "etag": "\"uSeRpLaYlIsTsEtAg\"",
+  "nextPageToken": "CAUQAA",
+  "pageInfo": {
+    "totalResults": 2,
+    "resultsPerPage": 2
+  },
+  "items": [
+    {
+      "kind": "youtube#playlist",
+      "etag": "\"pLaY1EtAg\"",
+      "id": "PL_USER_FAVORITES_1",
+      "snippet": {
+        "publishedAt": "2023-01-10T12:00:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "My Favorite Tracks",
+        "description": "Best music gathered over the years.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg", "width": 120, "height": 90 },
+          "medium": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg", "width": 320, "height": 180 },
+          "high": { "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "FluxTube User"
+      },
+      "status": {
+        "privacyStatus": "private"
+      },
+      "contentDetails": {
+        "itemCount": 24
+      }
+    },
+    {
+      "kind": "youtube#playlist",
+      "etag": "\"pLaY2EtAg\"",
+      "id": "PL_USER_WATCH_LATER",
+      "snippet": {
+        "publishedAt": "2023-02-15T15:30:00Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Watch Later (Cloud Sync)",
+        "description": "Videos saved to watch on desktop.",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/L_LUpnjgPso/default.jpg", "width": 120, "height": 90 }
+        },
+        "channelTitle": "FluxTube User"
+      },
+      "status": {
+        "privacyStatus": "private"
+      },
+      "contentDetails": {
+        "itemCount": 8
+      }
+    }
+  ]
+}

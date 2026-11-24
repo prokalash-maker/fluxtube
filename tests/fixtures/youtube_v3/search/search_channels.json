@@ -1,0 +1,77 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "\"cHaNnElSeArChEtAg1234567890\"",
+  "regionCode": "US",
+  "pageInfo": {
+    "totalResults": 3,
+    "resultsPerPage": 3
+  },
+  "items": [
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"cHaNnEl1EtAg\"",
+      "id": {
+        "kind": "youtube#channel",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw"
+      },
+      "snippet": {
+        "publishedAt": "2007-01-24T18:28:44Z",
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "title": "Rick Astley",
+        "description": "Official YouTube channel for Rick Astley.",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/ytc/default_channel.jpg", "width": 88, "height": 88 },
+          "medium": { "url": "https://yt3.ggpht.com/ytc/mq_channel.jpg", "width": 240, "height": 240 },
+          "high": { "url": "https://yt3.ggpht.com/ytc/hq_channel.jpg", "width": 800, "height": 800 }
+        },
+        "channelTitle": "Rick Astley",
+        "liveBroadcastContent": "none",
+        "publishTime": "2007-01-24T18:28:44Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"cHaNnEl2EtAg\"",
+      "id": {
+        "kind": "youtube#channel",
+        "channelId": "UCnKz_L_g_xY9ZzQ"
+      },
+      "snippet": {
+        "publishedAt": "2018-05-12T09:15:00Z",
+        "channelId": "UCnKz_L_g_xY9ZzQ",
+        "title": "Суспільне Новини — FluxTube UA",
+        "description": "Головні новини України та світу наживо.",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/ytc/ua_default.jpg", "width": 88, "height": 88 },
+          "medium": { "url": "https://yt3.ggpht.com/ytc/ua_medium.jpg", "width": 240, "height": 240 },
+          "high": { "url": "https://yt3.ggpht.com/ytc/ua_high.jpg", "width": 800, "height": 800 }
+        },
+        "channelTitle": "Суспільне Новини — FluxTube UA",
+        "liveBroadcastContent": "none",
+        "publishTime": "2018-05-12T09:15:00Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "\"cHaNnEl3EtAg\"",
+      "id": {
+        "kind": "youtube#channel",
+        "channelId": "UCjap_dev_channel_id"
+      },
+      "snippet": {
+        "publishedAt": "2019-11-03T11:22:33Z",
+        "channelId": "UCjap_dev_channel_id",
+        "title": "プログラミング解説チャンネル 🚀",
+        "description": "Rust言語とデスクトップクライアント開発チュートリアル。",
+        "thumbnails": {
+          "default": { "url": "https://yt3.ggpht.com/ytc/jp_default.jpg", "width": 88, "height": 88 },
+          "medium": { "url": "https://yt3.ggpht.com/ytc/jp_medium.jpg", "width": 240, "height": 240 },
+          "high": { "url": "https://yt3.ggpht.com/ytc/jp_high.jpg", "width": 800, "height": 800 }
+        },
+        "channelTitle": "プログラミング解説チャンネル 🚀",
+        "liveBroadcastContent": "none",
+        "publishTime": "2019-11-03T11:22:33Z"
+      }
+    }
+  ]
+}

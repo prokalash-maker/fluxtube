@@ -1,0 +1,30 @@
+{
+  "kind": "youtube#commentThread",
+  "etag": "\"nEwCoMmEnTtHrEaDEtAg\"",
+  "id": "UgzD_NEW_POSTED_THREAD_123",
+  "snippet": {
+    "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+    "videoId": "dQw4w9WgXcQ",
+    "topLevelComment": {
+      "kind": "youtube#comment",
+      "etag": "\"nEwCoMmEnTEtAg\"",
+      "id": "UgzD_NEW_POSTED_THREAD_123",
+      "snippet": {
+        "channelId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+        "videoId": "dQw4w9WgXcQ",
+        "textDisplay": "Posted from FluxTube desktop client in offline mock test!",
+        "textOriginal": "Posted from FluxTube desktop client in offline mock test!",
+        "authorDisplayName": "FluxTube Tester",
+        "authorProfileImageUrl": "https://yt3.ggpht.com/default_avatar.jpg",
+        "canRate": true,
+        "viewerRating": "none",
+        "likeCount": 0,
+        "publishedAt": "2026-11-24T13:15:00Z",
+        "updatedAt": "2026-11-24T13:15:00Z"
+      }
+    },
+    "canReply": true,
+    "totalReplyCount": 0,
+    "isPublic": true
+  }
+}
