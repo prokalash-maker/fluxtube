@@ -155,9 +155,20 @@
     "login": "Sign In",
     "logout": "Sign Out",
     "guest": "Guest Mode",
-    "switch_account": "Switch Account",
-    "oauth_note": "Uses Google OAuth 2.0 PKCE via your system browser. Passwords are never entered inside FluxTube.",
-    "mock_mode_badge": "Offline Demo Mode"
+    "switch_account": "Google Account",
+    "oauth_note": "Uses official Google OAuth 2.0 via your system browser. Passwords are never entered inside FluxTube.",
+    "mock_mode_badge": "Offline Demo Mode",
+    "device_tab": "TV / Device Code",
+    "pkce_tab": "Browser PKCE",
+    "device_title": "Connect via google.com/device",
+    "device_steps": "1. Request a one-time code below  •  2. Open google.com/device in your browser  •  3. Enter the code and approve access",
+    "request_code": "Get Activation Code",
+    "open_device_url": "Open google.com/device",
+    "copy_code": "Copy Code",
+    "cancel_device": "Cancel",
+    "waiting_approval": "Waiting for approval in your browser...",
+    "credentials_title": "Google Cloud API Credentials",
+    "save_credentials": "Save Credentials"
   },
   "history": {
     "title": "Watch History",

@@ -1,16 +1,18 @@
-use crate::messages::{ChannelTab, Route, SettingsTab, UiMessage};
-use crate::state::{format_seconds_hms, UiState};
+use crate::messages::{AuthTab, ChannelTab, Route, SettingsTab, UiMessage};
+use crate::state::{format_relative_age, format_seconds_hms, UiState};
 use fluxtube_core::{PerformanceProfileType, Video, VideoRating};
 use fluxtube_design_system::{
-    empty_state, error_banner, ghost_button_style, input_style, panel_style, pill_badge,
-    primary_button_style, secondary_button_style, stat_tile, toast_banner, DensityMode,
-    LayoutMetrics, ThemeKind, ThemePalette,
+    accent_badge, activation_code_box, avatar_circle, chip_button_style, deterministic_tint,
+    empty_state, error_banner, ghost_button_style, input_style, nav_pill_button_style,
+    panel_style, pill_badge, primary_button_style, secondary_button_style, stat_tile, toast_banner,
+    DensityMode, LayoutMetrics, ThemeKind, ThemePalette, FONT_MONO_BOLD, FONT_UI_BOLD,
+    FONT_UI_SEMIBOLD,
 };
 use fluxtube_localization::LocalizationManager;
 use fluxtube_youtube_api::{SearchOrder, SearchResourceType, VideoDurationFilter};
 use iced::widget::{
-    button, checkbox, column, container, image, row, scrollable, slider, text, text_input, Column,
-    Row, Space,
+    button, checkbox, column, container, image, row, scrollable, slider, stack, text, text_input,
+    Column, Row, Space,
 };
 use iced::{Alignment, Background, Border, Color, Element, Length};
 
@@ -92,23 +94,24 @@ pub fn render_app<'a>(state: &'a UiState, loc: &'a LocalizationManager) -> Eleme
                 palette,
                 metrics,
             ))
-            .padding([6, 14]),
+            .padding([6, 16]),
         );
     }
 
-    let base = container(root_col)
+    let base: Element<'a, UiMessage> = container(root_col)
         .width(Length::Fill)
         .height(Length::Fill)
         .style(move |_| container::Style {
             background: Some(Background::Color(palette.bg_primary)),
             text_color: Some(palette.text_primary),
             ..Default::default()
-        });
+        })
+        .into();
 
     if state.show_account_modal {
-        render_account_modal(state, loc, palette, metrics)
+        stack![base, render_account_modal(state, loc, palette, metrics)].into()
     } else {
-        base.into()
+        base
     }
 }
 
@@ -121,55 +124,110 @@ fn render_top_bar<'a>(
     let search_input = text_input(&loc.t("search.placeholder"), &state.search_query)
         .on_input(UiMessage::SearchInputChanged)
         .on_submit(UiMessage::SubmitSearch)
-        .padding([8, 12])
+        .padding([8, 14])
         .size(metrics.font_body)
         .width(Length::Fill)
-        .style(input_style(palette, metrics.radius_sm));
+        .style(input_style(palette, 999.0));
 
-    let account_label = match &state.active_account {
-        Some(acc) => acc.name.clone(),
-        None => loc.t("auth.guest"),
+    let account_chip: Element<'a, UiMessage> = match &state.active_account {
+        Some(acc) => {
+            let tint = deterministic_tint(&acc.name);
+            button(
+                row![
+                    avatar_circle(&acc.name, tint, 24.0),
+                    text(&acc.name).font(FONT_UI_SEMIBOLD).size(metrics.font_caption),
+                ]
+                .spacing(8)
+                .align_y(Alignment::Center),
+            )
+            .on_press(UiMessage::ToggleAccountModal(!state.show_account_modal))
+            .padding([5, 12])
+            .style(secondary_button_style(palette, 999.0))
+            .into()
+        }
+        None => button(
+            row![
+                avatar_circle("G", palette.accent, 22.0),
+                text(loc.t("auth.login"))
+                    .font(FONT_UI_SEMIBOLD)
+                    .size(metrics.font_caption),
+            ]
+            .spacing(8)
+            .align_y(Alignment::Center),
+        )
+        .on_press(UiMessage::ToggleAccountModal(!state.show_account_modal))
+        .padding([5, 12])
+        .style(secondary_button_style(palette, 999.0))
+        .into(),
     };
 
+    let brand_badge = button(
+        row![
+            container(text("▶").size(12).color(Color::WHITE))
+                .width(Length::Fixed(24.0))
+                .height(Length::Fixed(24.0))
+                .center_x(Length::Fixed(24.0))
+                .center_y(Length::Fixed(24.0))
+                .style(move |_| container::Style {
+                    background: Some(Background::Color(palette.accent)),
+                    border: Border {
+                        radius: 7.0.into(),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }),
+            text(loc.t("app.name"))
+                .font(FONT_UI_BOLD)
+                .size(metrics.font_heading)
+                .color(palette.text_primary),
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center),
+    )
+    .on_press(UiMessage::Navigate(Route::Home))
+    .padding([4, 8])
+    .style(ghost_button_style(palette, metrics.radius_sm, false));
+
     let mut bar = row![
-        button(text(if state.sidebar_collapsed { "☰" } else { "◁" }).size(metrics.font_body))
-            .on_press(UiMessage::ToggleSidebar)
-            .padding([6, 10])
-            .style(ghost_button_style(palette, metrics.radius_sm, false)),
-        button(text(loc.t("app.name")).size(metrics.font_heading).color(palette.accent))
-            .on_press(UiMessage::Navigate(Route::Home))
-            .padding([4, 8])
-            .style(ghost_button_style(palette, metrics.radius_sm, false)),
-        Space::with_width(Length::Fixed(12.0)),
-        search_input,
-        button(text(loc.t("search.button")).size(metrics.font_caption))
-            .on_press(UiMessage::SubmitSearch)
-            .padding([8, 14])
-            .style(primary_button_style(palette, metrics.radius_sm)),
+        button(
+            text(if state.sidebar_collapsed { "☰" } else { "◁" })
+                .size(metrics.font_body)
+                .color(palette.text_secondary)
+        )
+        .on_press(UiMessage::ToggleSidebar)
+        .padding([6, 10])
+        .style(ghost_button_style(palette, metrics.radius_sm, false)),
+        brand_badge,
+        Space::with_width(Length::Fixed(16.0)),
+        container(search_input).width(Length::FillPortion(3)),
+        button(
+            text(loc.t("search.button"))
+                .font(FONT_UI_SEMIBOLD)
+                .size(metrics.font_caption)
+        )
+        .on_press(UiMessage::SubmitSearch)
+        .padding([8, 16])
+        .style(primary_button_style(palette, 999.0)),
         button(text(loc.t("search.open_url")).size(metrics.font_caption))
             .on_press(UiMessage::OpenUrlOrClipboard)
             .padding([8, 12])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .style(secondary_button_style(palette, 999.0)),
+        Space::with_width(Length::FillPortion(1)),
     ]
     .spacing(metrics.space_sm)
     .align_y(Alignment::Center);
 
     if state.is_mock_mode {
-        bar = bar.push(pill_badge(loc.t("auth.mock_mode_badge"), palette, metrics));
+        bar = bar.push(accent_badge(loc.t("auth.mock_mode_badge"), palette, metrics));
     }
     if state.private_mode {
         bar = bar.push(pill_badge("Private", palette, metrics));
     }
 
-    bar = bar.push(
-        button(text(account_label).size(metrics.font_caption))
-            .on_press(UiMessage::ToggleAccountModal(!state.show_account_modal))
-            .padding([7, 12])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
-    );
+    bar = bar.push(account_chip);
 
     container(bar)
-        .padding([10, 14])
+        .padding([10, 16])
         .width(Length::Fill)
         .style(move |_| container::Style {
             background: Some(Background::Color(palette.bg_secondary)),
@@ -195,7 +253,7 @@ fn render_sidebar<'a>(
         metrics.sidebar_expanded_width
     };
 
-    let mut col = Column::new().spacing(4).padding(8);
+    let mut col = Column::new().spacing(3).padding([12, 10]);
 
     for item in &state.sidebar_items {
         if !item.visible {
@@ -205,47 +263,82 @@ fn render_sidebar<'a>(
             continue;
         }
         let is_active = state.route == item.route;
+
+        // Subtle section dividers for clean visual rhythm
+        if !state.sidebar_collapsed
+            && matches!(item.route, Route::History | Route::Diagnostics)
+        {
+            col = col.push(Space::with_height(Length::Fixed(8.0)));
+            col = col.push(
+                container(Space::with_height(Length::Fixed(1.0)))
+                    .width(Length::Fill)
+                    .style(move |_| container::Style {
+                        background: Some(Background::Color(palette.border_subtle)),
+                        ..Default::default()
+                    }),
+            );
+            col = col.push(Space::with_height(Length::Fixed(8.0)));
+        }
+
         let label_txt = if state.sidebar_collapsed {
             route_icon(item.route).to_string()
         } else {
-            let pin_mark = if item.pinned { " •" } else { "" };
-            format!("{} {}{}", route_icon(item.route), route_label(item.route, loc), pin_mark)
+            format!("{}   {}", route_icon(item.route), route_label(item.route, loc))
         };
 
-        let btn = button(text(label_txt).size(metrics.font_body))
+        let btn_text = if is_active {
+            text(label_txt).font(FONT_UI_SEMIBOLD).size(metrics.font_body)
+        } else {
+            text(label_txt).size(metrics.font_body)
+        };
+
+        let btn = button(btn_text)
             .on_press(UiMessage::Navigate(item.route))
             .width(Length::Fill)
-            .padding([8, 10])
-            .style(ghost_button_style(palette, metrics.radius_sm, is_active));
+            .padding([8, 12])
+            .style(nav_pill_button_style(palette, metrics.radius_sm, is_active));
 
         col = col.push(btn);
     }
 
     if !state.sidebar_collapsed && !state.subscriptions.is_empty() {
         col = col
-            .push(Space::with_height(Length::Fixed(12.0)))
+            .push(Space::with_height(Length::Fixed(14.0)))
             .push(
                 row![
                     text(loc.t("nav.subscriptions"))
+                        .font(FONT_UI_SEMIBOLD)
                         .size(metrics.font_caption)
                         .color(palette.text_muted)
                         .width(Length::Fill),
-                    button(text(if state.compact_subscriptions { "▾" } else { "▴" }).size(metrics.font_micro))
-                        .on_press(UiMessage::ToggleCompactSubscriptions)
-                        .padding([2, 6])
-                        .style(ghost_button_style(palette, metrics.radius_sm, false)),
+                    button(
+                        text(if state.compact_subscriptions { "▾" } else { "▴" })
+                            .size(metrics.font_micro)
+                    )
+                    .on_press(UiMessage::ToggleCompactSubscriptions)
+                    .padding([2, 6])
+                    .style(ghost_button_style(palette, metrics.radius_sm, false)),
                 ]
+                .padding([0, 6])
                 .align_y(Alignment::Center),
             );
 
         let limit = if state.compact_subscriptions { 3 } else { 8 };
         for ch in state.subscriptions.iter().take(limit) {
+            let tint = deterministic_tint(&ch.title);
             col = col.push(
-                button(text(format!("◉ {}", ch.title)).size(metrics.font_caption))
-                    .on_press(UiMessage::OpenChannel(ch.id.clone()))
-                    .width(Length::Fill)
-                    .padding([5, 8])
-                    .style(ghost_button_style(palette, metrics.radius_sm, false)),
+                button(
+                    row![
+                        avatar_circle(&ch.title, tint, 22.0),
+                        text(&ch.title).size(metrics.font_caption),
+                    ]
+                    .spacing(8)
+                    .align_y(Alignment::Center),
+                )
+                .on_press(UiMessage::OpenChannel(ch.id.clone()))
+                .width(Length::Fill)
+                .padding([5, 8])
+                .style(ghost_button_style(palette, metrics.radius_sm, false)),
             );
         }
     }
@@ -324,10 +417,14 @@ fn render_main_content<'a>(
 
     inner = inner.push(page);
 
-    container(scrollable(container(inner).padding(metrics.space_lg as u16).width(Length::Fill)))
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+    container(scrollable(
+        container(inner)
+            .padding(metrics.space_lg as u16)
+            .width(Length::Fill),
+    ))
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .into()
 }
 
 fn render_video_card<'a>(
@@ -336,85 +433,157 @@ fn render_video_card<'a>(
     palette: ThemePalette,
     metrics: LayoutMetrics,
 ) -> Element<'a, UiMessage> {
-    let thumb_area: Element<'a, UiMessage> = if let Some(handle) = state.thumbnails.get(&video.thumbnail_url) {
-        container(
+    let thumb_h = 158.0 * metrics.scale;
+    let tint = deterministic_tint(&video.channel_title);
+
+    let base_thumb: Element<'a, UiMessage> =
+        if let Some(handle) = state.thumbnails.get(&video.thumbnail_url) {
             image(handle.clone())
                 .width(Length::Fill)
-                .height(Length::Fixed(148.0 * metrics.scale)),
-        )
-        .width(Length::Fill)
-        .into()
+                .height(Length::Fixed(thumb_h))
+                .into()
+        } else {
+            // Crisp minimal artwork card with subtle tint and centered play monogram
+            let thumb_bg = Color::from_rgba(tint.r, tint.g, tint.b, if palette.is_dark { 0.16 } else { 0.12 });
+            container(
+                column![
+                    container(
+                        text(if video.is_live() {
+                            "●"
+                        } else if video.is_short() {
+                            "⚡"
+                        } else {
+                            "▶"
+                        })
+                        .size(20.0)
+                        .color(Color::WHITE),
+                    )
+                    .width(Length::Fixed(44.0))
+                    .height(Length::Fixed(44.0))
+                    .center_x(Length::Fixed(44.0))
+                    .center_y(Length::Fixed(44.0))
+                    .style(move |_| container::Style {
+                        background: Some(Background::Color(Color { a: 0.85, ..tint })),
+                        border: Border {
+                            radius: 22.0.into(),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    }),
+                ]
+                .align_x(Alignment::Center),
+            )
+            .width(Length::Fill)
+            .center_x(Length::Fill)
+            .center_y(Length::Fixed(thumb_h))
+            .style(move |_| container::Style {
+                background: Some(Background::Color(thumb_bg)),
+                border: Border {
+                    color: palette.border_subtle,
+                    width: 1.0,
+                    radius: metrics.radius_sm.into(),
+                },
+                ..Default::default()
+            })
+            .into()
+        };
+
+    // Floating duration / LIVE badge positioned in bottom-right corner
+    let duration_badge_text = if video.is_live() {
+        "LIVE".to_string()
+    } else if video.is_short() {
+        format!("SHORT {}", video.formatted_duration())
     } else {
-        container(
-            column![
-                text(if video.is_live() { "● LIVE" } else if video.is_short() { "⚡ SHORT" } else { "▶" })
-                    .size(metrics.font_heading)
-                    .color(if video.is_live() { palette.danger } else { palette.accent }),
-                text(video.formatted_duration())
-                    .size(metrics.font_caption)
-                    .color(palette.text_muted),
-            ]
-            .spacing(4)
-            .align_x(Alignment::Center),
-        )
-        .width(Length::Fill)
-        .center_x(Length::Fill)
-        .center_y(Length::Fixed(148.0 * metrics.scale))
-        .style(move |_| container::Style {
-            background: Some(Background::Color(palette.bg_elevated)),
-            border: Border {
-                color: palette.border_subtle,
-                width: 1.0,
-                radius: metrics.radius_sm.into(),
-            },
-            ..Default::default()
-        })
-        .into()
+        video.formatted_duration()
+    };
+    let badge_bg = if video.is_live() {
+        palette.danger
+    } else {
+        Color::from_rgba(0.05, 0.06, 0.08, 0.86)
     };
 
-    let meta = format!(
-        "{}  •  {} views  •  {}",
-        video.channel_title,
-        video.formatted_view_count(),
-        video.formatted_duration()
-    );
+    let overlay = container(
+        container(
+            text(duration_badge_text)
+                .font(FONT_UI_SEMIBOLD)
+                .size(11.0 * metrics.scale)
+                .color(Color::WHITE),
+        )
+        .padding([3, 7])
+        .style(move |_| container::Style {
+            background: Some(Background::Color(badge_bg)),
+            border: Border {
+                radius: 5.0.into(),
+                ..Default::default()
+            },
+            ..Default::default()
+        }),
+    )
+    .width(Length::Fill)
+    .height(Length::Fixed(thumb_h))
+    .padding(8)
+    .align_x(iced::alignment::Horizontal::Right)
+    .align_y(iced::alignment::Vertical::Bottom);
 
-    let card_content = column![
-        thumb_area,
-        text(&video.title)
-            .size(metrics.font_body)
-            .color(palette.text_primary),
-        text(meta)
+    let thumb_stack = stack![base_thumb, overlay];
+
+    let meta_row = row![
+        avatar_circle(&video.channel_title, tint, 32.0 * metrics.scale),
+        column![
+            text(&video.title)
+                .font(FONT_UI_SEMIBOLD)
+                .size(metrics.font_body)
+                .color(palette.text_primary),
+            text(format!(
+                "{}  •  {} views  •  {}",
+                video.channel_title,
+                video.formatted_view_count(),
+                format_relative_age(video.published_at)
+            ))
             .size(metrics.font_caption)
             .color(palette.text_secondary),
+        ]
+        .spacing(4)
+        .width(Length::Fill),
     ]
-    .spacing(metrics.space_xs);
+    .spacing(10)
+    .align_y(Alignment::Start);
 
-    let open_btn = button(card_content)
+    let open_btn = button(column![thumb_stack, meta_row].spacing(10))
         .on_press(UiMessage::OpenVideo(video.id.clone()))
-        .padding(metrics.space_sm as u16)
+        .padding(8)
         .width(Length::Fill)
         .style(ghost_button_style(palette, metrics.radius_md, false));
 
     let actions = row![
-        button(text(&video.channel_title).size(metrics.font_micro))
+        button(text(&video.channel_title).size(metrics.font_micro).color(palette.text_muted))
             .on_press(UiMessage::OpenChannel(video.channel_id.clone()))
             .padding([3, 6])
             .style(ghost_button_style(palette, metrics.radius_sm, false)),
         Space::with_width(Length::Fill),
-        button(text("+Queue").size(metrics.font_micro))
+        button(text("+ Queue").size(metrics.font_micro))
             .on_press(UiMessage::AddToQueue(video.id.clone()))
-            .padding([3, 8])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .padding([3, 9])
+            .style(secondary_button_style(palette, 999.0)),
         button(text("◫").size(metrics.font_micro))
             .on_press(UiMessage::ToggleWatchLater(video.id.clone()))
-            .padding([3, 8])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .padding([3, 9])
+            .style(secondary_button_style(palette, 999.0)),
     ]
     .spacing(4)
+    .padding([0, 8])
     .align_y(Alignment::Center);
 
-    container(column![open_btn, actions].spacing(4).padding(4))
+    container(
+        column![open_btn, actions]
+            .spacing(4)
+            .padding(iced::Padding {
+                top: 2.0,
+                right: 2.0,
+                bottom: 8.0,
+                left: 2.0,
+            }),
+    )
         .width(Length::Fill)
         .style(move |_| palette.card_container_style(metrics.radius_md))
         .into()
@@ -451,33 +620,29 @@ fn render_home_view<'a>(
 ) -> Element<'a, UiMessage> {
     let categories = ["All", "Rust", "Hardware", "Live", "Short"];
 
-    // Properly style category buttons
     let mut styled_cat_row = Row::new().spacing(metrics.space_sm).align_y(Alignment::Center);
     for c in categories {
-        if state.home_category == c {
-            styled_cat_row = styled_cat_row.push(
-                button(text(c).size(metrics.font_caption))
-                    .on_press(UiMessage::SelectHomeCategory(c.to_string()))
-                    .padding([6, 12])
-                    .style(primary_button_style(palette, metrics.radius_sm)),
-            );
-        } else {
-            styled_cat_row = styled_cat_row.push(
-                button(text(c).size(metrics.font_caption))
-                    .on_press(UiMessage::SelectHomeCategory(c.to_string()))
-                    .padding([6, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-            );
-        }
+        let active = state.home_category == c;
+        styled_cat_row = styled_cat_row.push(
+            button(
+                text(c)
+                    .font(if active { FONT_UI_SEMIBOLD } else { iced::Font::DEFAULT })
+                    .size(metrics.font_caption),
+            )
+            .on_press(UiMessage::SelectHomeCategory(c.to_string()))
+            .padding([6, 14])
+            .style(chip_button_style(palette, active)),
+        );
     }
+
     styled_cat_row = styled_cat_row
         .push(Space::with_width(Length::Fill))
         .push(pill_badge(loc.t("home.local_badge"), palette, metrics))
         .push(
             button(text(loc.t("home.refresh")).size(metrics.font_caption))
                 .on_press(UiMessage::RefreshFeed)
-                .padding([6, 12])
-                .style(secondary_button_style(palette, metrics.radius_sm)),
+                .padding([6, 14])
+                .style(secondary_button_style(palette, 999.0)),
         );
 
     let mut col = Column::new().spacing(metrics.space_lg).push(styled_cat_row);
@@ -488,7 +653,7 @@ fn render_home_view<'a>(
             cw_row = cw_row.push(
                 button(
                     column![
-                        text(&item.title).size(metrics.font_caption),
+                        text(&item.title).font(FONT_UI_SEMIBOLD).size(metrics.font_caption),
                         text(format!(
                             "{} • Resume {}",
                             item.channel_title,
@@ -497,23 +662,27 @@ fn render_home_view<'a>(
                         .size(metrics.font_micro)
                         .color(palette.accent),
                     ]
-                    .spacing(3),
+                    .spacing(4),
                 )
                 .on_press(UiMessage::OpenVideoAt(
                     item.video_id.clone(),
                     item.playback_position_seconds,
                 ))
-                .padding(10)
+                .padding(12)
                 .width(Length::FillPortion(1))
                 .style(secondary_button_style(palette, metrics.radius_md)),
             );
         }
         col = col
-            .push(text(loc.t("home.continue_watching")).size(metrics.font_heading))
+            .push(
+                text(loc.t("home.continue_watching"))
+                    .font(FONT_UI_BOLD)
+                    .size(metrics.font_heading),
+            )
             .push(cw_row);
     }
 
-    let filtered: Vec<Video> = state
+    let matching_refs: Vec<&Video> = state
         .home_videos
         .iter()
         .filter(|v| match state.home_category.as_str() {
@@ -523,19 +692,20 @@ fn render_home_view<'a>(
             "Hardware" => v.title.to_lowercase().contains("intel") || v.title.to_lowercase().contains("ram"),
             _ => true,
         })
-        .cloned()
         .collect();
 
     col = col.push(
         row![
-            text(loc.t("home.local_recommendations")).size(metrics.font_heading),
+            text(loc.t("home.local_recommendations"))
+                .font(FONT_UI_BOLD)
+                .size(metrics.font_heading),
             Space::with_width(Length::Fixed(8.0)),
             pill_badge(loc.t("home.local_badge"), palette, metrics),
         ]
         .align_y(Alignment::Center),
     );
 
-    if filtered.is_empty() {
+    if matching_refs.is_empty() {
         col = col.push(empty_state(
             loc.t("search.empty"),
             loc.t("library.device_sync_note"),
@@ -543,20 +713,7 @@ fn render_home_view<'a>(
             metrics,
         ));
     } else {
-        // Render directly from state.home_videos matching filter using indices
         let cols = metrics.grid_columns(state.content_width());
-        let matching_refs: Vec<&Video> = state
-            .home_videos
-            .iter()
-            .filter(|v| match state.home_category.as_str() {
-                "Live" => v.is_live(),
-                "Short" => v.is_short(),
-                "Rust" => v.title.to_lowercase().contains("rust") || v.title.to_lowercase().contains("sqlite"),
-                "Hardware" => v.title.to_lowercase().contains("intel") || v.title.to_lowercase().contains("ram"),
-                _ => true,
-            })
-            .collect();
-
         let mut grid = Column::new().spacing(metrics.space_md).width(Length::Fill);
         for chunk in matching_refs.chunks(cols) {
             let mut r = Row::new().spacing(metrics.space_md).width(Length::Fill);
@@ -584,7 +741,7 @@ fn render_video_feed_view<'a>(
 ) -> Element<'a, UiMessage> {
     let mut col = Column::new()
         .spacing(metrics.space_md)
-        .push(text(heading.to_string()).size(metrics.font_title));
+        .push(text(heading.to_string()).font(FONT_UI_BOLD).size(metrics.font_title));
 
     if videos.is_empty() {
         col = col.push(empty_state(
@@ -630,7 +787,7 @@ fn render_search_view<'a>(
         button(text(loc.t("search.clear_history")).size(metrics.font_micro))
             .on_press(UiMessage::ClearSearchHistory)
             .padding([5, 10])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .style(secondary_button_style(palette, 999.0)),
     ]
     .spacing(6)
     .align_y(Alignment::Center);
@@ -647,7 +804,7 @@ fn render_search_view<'a>(
                 button(text(q.clone()).size(metrics.font_micro))
                     .on_press(UiMessage::SelectSearchSuggestion(q.clone()))
                     .padding([4, 10])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                    .style(secondary_button_style(palette, 999.0)),
             );
         }
         col = col.push(hist_row);
@@ -666,24 +823,28 @@ fn render_search_view<'a>(
                 "youtube#channel" => UiMessage::OpenChannel(item.id.clone()),
                 _ => UiMessage::OpenVideo(item.id.clone()),
             };
+            let tint = deterministic_tint(&item.channel_title);
             let card = container(
-                row![
-                    button(
+                button(
+                    row![
+                        avatar_circle(&item.channel_title, tint, 40.0),
                         column![
-                            text(&item.title).size(metrics.font_heading).color(palette.text_primary),
+                            text(&item.title).font(FONT_UI_SEMIBOLD).size(metrics.font_heading).color(palette.text_primary),
                             text(format!("{} • {}", item.channel_title, item.kind))
                                 .size(metrics.font_caption)
                                 .color(palette.accent),
                             text(&item.description).size(metrics.font_caption).color(palette.text_secondary),
                         ]
-                        .spacing(4),
-                    )
-                    .on_press(msg)
-                    .width(Length::Fill)
-                    .padding(10)
-                    .style(ghost_button_style(palette, metrics.radius_sm, false)),
-                ]
-                .align_y(Alignment::Center),
+                        .spacing(4)
+                        .width(Length::Fill),
+                    ]
+                    .spacing(14)
+                    .align_y(Alignment::Center),
+                )
+                .on_press(msg)
+                .width(Length::Fill)
+                .padding(12)
+                .style(ghost_button_style(palette, metrics.radius_sm, false)),
             )
             .width(Length::Fill)
             .style(move |_| palette.card_container_style(metrics.radius_md));
@@ -701,17 +862,15 @@ fn filter_chip<'a>(
     palette: ThemePalette,
     metrics: LayoutMetrics,
 ) -> Element<'a, UiMessage> {
-    button(text(label).size(metrics.font_micro))
-        .on_press(msg)
-        .padding([4, 10])
-        .style(move |t, s| {
-            if active {
-                primary_button_style(palette, metrics.radius_sm)(t, s)
-            } else {
-                secondary_button_style(palette, metrics.radius_sm)(t, s)
-            }
-        })
-        .into()
+    button(
+        text(label)
+            .font(if active { FONT_UI_SEMIBOLD } else { iced::Font::DEFAULT })
+            .size(metrics.font_micro),
+    )
+    .on_press(msg)
+    .padding([5, 12])
+    .style(chip_button_style(palette, active))
+    .into()
 }
 
 fn render_watch_view<'a>(
@@ -730,110 +889,174 @@ fn render_watch_view<'a>(
     };
 
     let player_height = if state.fullscreen_mode {
-        (state.window_height - 90.0).max(320.0)
+        (state.window_height - 130.0).max(340.0)
     } else if state.theater_mode {
         480.0 * metrics.scale
     } else {
         380.0 * metrics.scale
     };
 
+    let total_dur = state.player_duration_secs.max(video.duration.as_secs()).max(1);
+    let pos_clamped = state.player_position_secs.min(total_dur);
+
     let player_surface = container(
         column![
-            pill_badge(loc.t("player.embed_notice"), palette, metrics),
-            Space::with_height(Length::Fixed(10.0)),
-            text(&video.title).size(metrics.font_heading).color(Color::WHITE),
-            text(format!(
-                "{} • {} / {}",
-                if state.player_playing { "▶ Playing" } else { "⏸ Paused" },
-                format_seconds_hms(state.player_position_secs),
-                format_seconds_hms(state.player_duration_secs.max(video.duration.as_secs()))
-            ))
-            .size(metrics.font_body)
-            .color(Color::from_rgb8(210, 214, 222)),
+            accent_badge(loc.t("player.embed_notice"), palette, metrics),
             Space::with_height(Length::Fixed(12.0)),
-            row![
-                button(text(if state.player_playing { loc.t("player.pause") } else { loc.t("player.play") }).size(metrics.font_caption))
-                    .on_press(UiMessage::PlayerTogglePlay)
-                    .padding([8, 16])
-                    .style(primary_button_style(palette, metrics.radius_sm)),
-                button(text("-10s").size(metrics.font_caption))
-                    .on_press(UiMessage::PlayerSeekRelative(-10))
-                    .padding([8, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text("+10s").size(metrics.font_caption))
-                    .on_press(UiMessage::PlayerSeekRelative(10))
-                    .padding([8, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text(if state.player_muted { loc.t("player.unmute") } else { loc.t("player.mute") }).size(metrics.font_caption))
-                    .on_press(UiMessage::PlayerToggleMute)
-                    .padding([8, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text(loc.t("player.theater_mode")).size(metrics.font_caption))
-                    .on_press(UiMessage::PlayerToggleTheater)
-                    .padding([8, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text(loc.t("player.fullscreen")).size(metrics.font_caption))
-                    .on_press(UiMessage::PlayerToggleFullscreen)
-                    .padding([8, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text(loc.t("player.mini_player")).size(metrics.font_caption))
-                    .on_press(UiMessage::PlayerToggleMini)
-                    .padding([8, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text(loc.t("player.open_in_browser")).size(metrics.font_caption))
-                    .on_press(UiMessage::OpenInExternalBrowser(video.watch_url()))
-                    .padding([8, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-            ]
-            .spacing(8),
+            text(&video.title)
+                .font(FONT_UI_BOLD)
+                .size(metrics.font_title)
+                .color(Color::WHITE),
+            text(format!(
+                "{}  •  {} / {}",
+                if state.player_playing { "▶ Playing" } else { "⏸ Paused" },
+                format_seconds_hms(pos_clamped),
+                format_seconds_hms(total_dur)
+            ))
+            .font(FONT_MONO_BOLD)
+            .size(metrics.font_body)
+            .color(Color::from_rgb8(210, 216, 228)),
         ]
+        .spacing(6)
         .align_x(Alignment::Center),
     )
     .width(Length::Fill)
     .center_x(Length::Fill)
     .center_y(Length::Fixed(player_height))
+    .padding(24)
     .style(move |_| container::Style {
-        background: Some(Background::Color(Color::from_rgb8(10, 11, 14))),
+        background: Some(Background::Color(Color::from_rgb8(9, 10, 14))),
         border: Border {
             color: palette.border_subtle,
             width: 1.0,
-            radius: metrics.radius_md.into(),
+            radius: metrics.radius_lg.into(),
         },
         ..Default::default()
     });
 
-    let speed_controls = row![
-        text(loc.t_with_args("player.speed", &[("speed", &format!("{:.2}", state.player_rate))]))
-            .size(metrics.font_caption),
+    let seek_bar = row![
+        text(format_seconds_hms(pos_clamped))
+            .font(FONT_MONO_BOLD)
+            .size(metrics.font_caption)
+            .color(palette.text_secondary),
+        container(
+            slider(0_u32..=total_dur as u32, pos_clamped as u32, |v| {
+                UiMessage::PlayerSeekTo(v as u64)
+            })
+        )
+        .width(Length::Fill),
+        text(format_seconds_hms(total_dur))
+            .font(FONT_MONO_BOLD)
+            .size(metrics.font_caption)
+            .color(palette.text_secondary),
+    ]
+    .spacing(10)
+    .align_y(Alignment::Center);
+
+    let transport_bar = row![
+        button(
+            text(if state.player_playing {
+                loc.t("player.pause")
+            } else {
+                loc.t("player.play")
+            })
+            .font(FONT_UI_SEMIBOLD)
+            .size(metrics.font_caption)
+        )
+        .on_press(UiMessage::PlayerTogglePlay)
+        .padding([8, 18])
+        .style(primary_button_style(palette, 999.0)),
+        button(text("-10s").size(metrics.font_caption))
+            .on_press(UiMessage::PlayerSeekRelative(-10))
+            .padding([8, 12])
+            .style(secondary_button_style(palette, 999.0)),
+        button(text("+10s").size(metrics.font_caption))
+            .on_press(UiMessage::PlayerSeekRelative(10))
+            .padding([8, 12])
+            .style(secondary_button_style(palette, 999.0)),
+        button(
+            text(if state.player_muted {
+                loc.t("player.unmute")
+            } else {
+                loc.t("player.mute")
+            })
+            .size(metrics.font_caption)
+        )
+        .on_press(UiMessage::PlayerToggleMute)
+        .padding([8, 12])
+        .style(secondary_button_style(palette, 999.0)),
+        container(
+            slider(
+                0.0_f32..=1.0_f32,
+                state.player_volume,
+                UiMessage::PlayerVolumeChanged,
+            )
+            .step(0.05_f32)
+        )
+        .width(Length::Fixed(96.0)),
+        Space::with_width(Length::Fill),
         filter_chip("0.75x".into(), (state.player_rate - 0.75).abs() < 0.05, UiMessage::PlayerRateChanged(0.75), palette, metrics),
         filter_chip("1.0x".into(), (state.player_rate - 1.0).abs() < 0.05, UiMessage::PlayerRateChanged(1.0), palette, metrics),
         filter_chip("1.25x".into(), (state.player_rate - 1.25).abs() < 0.05, UiMessage::PlayerRateChanged(1.25), palette, metrics),
         filter_chip("1.5x".into(), (state.player_rate - 1.5).abs() < 0.05, UiMessage::PlayerRateChanged(1.5), palette, metrics),
-        filter_chip("2.0x".into(), (state.player_rate - 2.0).abs() < 0.05, UiMessage::PlayerRateChanged(2.0), palette, metrics),
-        Space::with_width(Length::Fill),
-        text(format!("Vol {}%", (state.player_volume * 100.0) as u32)).size(metrics.font_caption),
-        container(slider(0.0_f32..=1.0_f32, state.player_volume, UiMessage::PlayerVolumeChanged).step(0.05_f32))
-            .width(Length::Fixed(110.0)),
+        button(text(loc.t("player.theater_mode")).size(metrics.font_caption))
+            .on_press(UiMessage::PlayerToggleTheater)
+            .padding([7, 12])
+            .style(secondary_button_style(palette, metrics.radius_sm)),
+        button(text(loc.t("player.fullscreen")).size(metrics.font_caption))
+            .on_press(UiMessage::PlayerToggleFullscreen)
+            .padding([7, 12])
+            .style(secondary_button_style(palette, metrics.radius_sm)),
+        button(text(loc.t("player.mini_player")).size(metrics.font_caption))
+            .on_press(UiMessage::PlayerToggleMini)
+            .padding([7, 12])
+            .style(secondary_button_style(palette, metrics.radius_sm)),
+        button(text(loc.t("player.open_in_browser")).size(metrics.font_caption))
+            .on_press(UiMessage::OpenInExternalBrowser(video.watch_url()))
+            .padding([7, 12])
+            .style(secondary_button_style(palette, metrics.radius_sm)),
     ]
     .spacing(6)
     .align_y(Alignment::Center);
 
     let is_sub = state.subscribed_ids.contains(&video.channel_id);
+    let ch_tint = deterministic_tint(&video.channel_title);
     let action_bar = row![
-        button(text(&video.channel_title).size(metrics.font_heading))
-            .on_press(UiMessage::OpenChannel(video.channel_id.clone()))
-            .padding([6, 10])
-            .style(ghost_button_style(palette, metrics.radius_sm, false)),
-        button(text(if is_sub { loc.t("watch.subscribed") } else { loc.t("watch.subscribe") }).size(metrics.font_caption))
-            .on_press(UiMessage::ToggleChannelSubscribe(video.channel_id.clone()))
-            .padding([7, 14])
-            .style(move |t, s| {
-                if is_sub {
-                    secondary_button_style(palette, metrics.radius_sm)(t, s)
-                } else {
-                    primary_button_style(palette, metrics.radius_sm)(t, s)
-                }
-            }),
+        button(
+            row![
+                avatar_circle(&video.channel_title, ch_tint, 38.0),
+                column![
+                    text(&video.channel_title).font(FONT_UI_BOLD).size(metrics.font_heading),
+                    text(format!("{} views • {}", video.formatted_view_count(), video.published_at.format("%Y-%m-%d")))
+                        .size(metrics.font_caption)
+                        .color(palette.text_secondary),
+                ]
+                .spacing(2),
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
+        )
+        .on_press(UiMessage::OpenChannel(video.channel_id.clone()))
+        .padding([4, 8])
+        .style(ghost_button_style(palette, metrics.radius_sm, false)),
+        button(
+            text(if is_sub {
+                loc.t("watch.subscribed")
+            } else {
+                loc.t("watch.subscribe")
+            })
+            .font(FONT_UI_SEMIBOLD)
+            .size(metrics.font_caption)
+        )
+        .on_press(UiMessage::ToggleChannelSubscribe(video.channel_id.clone()))
+        .padding([8, 16])
+        .style(move |t, s| {
+            if is_sub {
+                secondary_button_style(palette, 999.0)(t, s)
+            } else {
+                primary_button_style(palette, 999.0)(t, s)
+            }
+        }),
         Space::with_width(Length::Fill),
         filter_chip(
             format!("👍 {}", loc.t("watch.like")),
@@ -851,16 +1074,16 @@ fn render_watch_view<'a>(
         ),
         button(text(loc.t("watch.save_later")).size(metrics.font_caption))
             .on_press(UiMessage::ToggleWatchLater(video.id.clone()))
-            .padding([6, 10])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .padding([6, 12])
+            .style(secondary_button_style(palette, 999.0)),
         button(text(loc.t("watch.bookmark_ts")).size(metrics.font_caption))
             .on_press(UiMessage::AddTimestampBookmark)
-            .padding([6, 10])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .padding([6, 12])
+            .style(secondary_button_style(palette, 999.0)),
         button(text(loc.t("watch.copy_ts_link")).size(metrics.font_caption))
             .on_press(UiMessage::CopyTimestampUrl)
-            .padding([6, 10])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .padding([6, 12])
+            .style(secondary_button_style(palette, 999.0)),
     ]
     .spacing(8)
     .align_y(Alignment::Center);
@@ -868,26 +1091,21 @@ fn render_watch_view<'a>(
     let mut left_col = Column::new()
         .spacing(metrics.space_md)
         .width(Length::FillPortion(2))
-        .push(text(&video.title).size(metrics.font_title))
-        .push(
-            text(format!(
-                "{} views • {}",
-                video.formatted_view_count(),
-                video.published_at.format("%Y-%m-%d")
-            ))
-            .size(metrics.font_caption)
-            .color(palette.text_secondary),
-        )
+        .push(text(&video.title).font(FONT_UI_BOLD).size(metrics.font_title))
         .push(action_bar)
         .push(
             container(
                 column![
-                    text(loc.t("watch.description")).size(metrics.font_heading),
-                    text(&video.description).size(metrics.font_body).color(palette.text_secondary),
+                    text(loc.t("watch.description"))
+                        .font(FONT_UI_SEMIBOLD)
+                        .size(metrics.font_heading),
+                    text(&video.description)
+                        .size(metrics.font_body)
+                        .color(palette.text_secondary),
                 ]
                 .spacing(6),
             )
-            .padding(12)
+            .padding(14)
             .width(Length::Fill)
             .style(move |_| palette.card_container_style(metrics.radius_md)),
         );
@@ -896,14 +1114,14 @@ fn render_watch_view<'a>(
         let mut ch_row = Row::new().spacing(6);
         for (ts, label) in &state.chapters {
             ch_row = ch_row.push(
-                button(text(format!("{} {}", format_seconds_hms(*ts), label)).size(metrics.font_micro))
+                button(text(format!("{}  {}", format_seconds_hms(*ts), label)).size(metrics.font_micro))
                     .on_press(UiMessage::OpenVideoAt(video.id.clone(), *ts))
-                    .padding([5, 10])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                    .padding([5, 12])
+                    .style(secondary_button_style(palette, 999.0)),
             );
         }
         left_col = left_col
-            .push(text(loc.t("watch.chapters")).size(metrics.font_heading))
+            .push(text(loc.t("watch.chapters")).font(FONT_UI_SEMIBOLD).size(metrics.font_heading))
             .push(ch_row);
     }
 
@@ -911,35 +1129,38 @@ fn render_watch_view<'a>(
     left_col = left_col.push(
         container(
             column![
-                text(loc.t("watch.notes")).size(metrics.font_heading),
+                text(loc.t("watch.notes")).font(FONT_UI_SEMIBOLD).size(metrics.font_heading),
                 row![
                     text_input(&loc.t("watch.note_placeholder"), &state.note_draft)
                         .on_input(UiMessage::NoteDraftChanged)
-                        .padding([6, 10])
+                        .padding([7, 12])
                         .style(input_style(palette, metrics.radius_sm))
                         .width(Length::Fill),
                     button(text(loc.t("settings.save")).size(metrics.font_caption))
                         .on_press(UiMessage::SaveVideoNote)
-                        .padding([6, 12])
+                        .padding([7, 14])
                         .style(secondary_button_style(palette, metrics.radius_sm)),
                 ]
                 .spacing(8),
             ]
-            .spacing(6),
+            .spacing(8),
         )
-        .padding(12)
+        .padding(14)
         .width(Length::Fill)
         .style(move |_| palette.card_container_style(metrics.radius_md)),
     );
 
-    // Comments (collapsible for CPU/RAM savings)
+    // Collapsible Comments
     left_col = left_col.push(
         row![
-            text(loc.t("watch.comments")).size(metrics.font_heading).width(Length::Fill),
+            text(loc.t("watch.comments"))
+                .font(FONT_UI_SEMIBOLD)
+                .size(metrics.font_heading)
+                .width(Length::Fill),
             button(text(loc.t("watch.toggle_comments")).size(metrics.font_caption))
                 .on_press(UiMessage::ToggleCommentsPanel)
-                .padding([5, 10])
-                .style(secondary_button_style(palette, metrics.radius_sm)),
+                .padding([5, 12])
+                .style(secondary_button_style(palette, 999.0)),
         ]
         .align_y(Alignment::Center),
     );
@@ -950,29 +1171,37 @@ fn render_watch_view<'a>(
                 text_input(&loc.t("watch.comment_placeholder"), &state.comment_draft)
                     .on_input(UiMessage::CommentDraftChanged)
                     .on_submit(UiMessage::SubmitComment)
-                    .padding([7, 10])
+                    .padding([8, 12])
                     .style(input_style(palette, metrics.radius_sm))
                     .width(Length::Fill),
                 button(text(loc.t("watch.post_comment")).size(metrics.font_caption))
                     .on_press(UiMessage::SubmitComment)
-                    .padding([7, 14])
+                    .padding([8, 16])
                     .style(primary_button_style(palette, metrics.radius_sm)),
             ]
             .spacing(8),
         );
 
         for c in &state.comments {
+            let ctint = deterministic_tint(&c.author_name);
             left_col = left_col.push(
                 container(
-                    column![
-                        text(format!("{} • 👍 {}", c.author_name, c.like_count))
-                            .size(metrics.font_caption)
-                            .color(palette.accent),
-                        text(&c.text).size(metrics.font_body),
+                    row![
+                        avatar_circle(&c.author_name, ctint, 30.0),
+                        column![
+                            text(format!("{}  •  👍 {}", c.author_name, c.like_count))
+                                .font(FONT_UI_SEMIBOLD)
+                                .size(metrics.font_caption)
+                                .color(palette.accent),
+                            text(&c.text).size(metrics.font_body),
+                        ]
+                        .spacing(3)
+                        .width(Length::Fill),
                     ]
-                    .spacing(3),
+                    .spacing(10)
+                    .align_y(Alignment::Start),
                 )
-                .padding(10)
+                .padding(12)
                 .width(Length::Fill)
                 .style(move |_| palette.card_container_style(metrics.radius_sm)),
             );
@@ -987,25 +1216,35 @@ fn render_watch_view<'a>(
         .width(Length::FillPortion(1))
         .push(
             row![
-                text(loc.t("watch.queue")).size(metrics.font_heading).width(Length::Fill),
+                text(loc.t("watch.queue"))
+                    .font(FONT_UI_SEMIBOLD)
+                    .size(metrics.font_heading)
+                    .width(Length::Fill),
                 button(text("Next ▶").size(metrics.font_micro))
                     .on_press(UiMessage::PlayNextInQueue)
                     .padding([4, 10])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                    .style(secondary_button_style(palette, 999.0)),
             ]
             .align_y(Alignment::Center),
         );
 
     for qv in state.queue.iter().chain(state.home_videos.iter()).take(6) {
+        let qtint = deterministic_tint(&qv.channel_title);
         right_col = right_col.push(
             button(
-                column![
-                    text(&qv.title).size(metrics.font_caption),
-                    text(format!("{} • {}", qv.channel_title, qv.formatted_duration()))
-                        .size(metrics.font_micro)
-                        .color(palette.text_muted),
+                row![
+                    avatar_circle(&qv.channel_title, qtint, 28.0),
+                    column![
+                        text(&qv.title).font(FONT_UI_SEMIBOLD).size(metrics.font_caption),
+                        text(format!("{} • {}", qv.channel_title, qv.formatted_duration()))
+                            .size(metrics.font_micro)
+                            .color(palette.text_muted),
+                    ]
+                    .spacing(2)
+                    .width(Length::Fill),
                 ]
-                .spacing(2),
+                .spacing(10)
+                .align_y(Alignment::Center),
             )
             .on_press(UiMessage::OpenVideo(qv.id.clone()))
             .width(Length::Fill)
@@ -1014,13 +1253,14 @@ fn render_watch_view<'a>(
         );
     }
 
-    let details_layout: Element<'a, UiMessage> = if state.theater_mode || state.content_width() < 920.0 {
-        column![left_col, right_col].spacing(metrics.space_lg).into()
-    } else {
-        row![left_col, right_col].spacing(metrics.space_lg).into()
-    };
+    let details_layout: Element<'a, UiMessage> =
+        if state.theater_mode || state.content_width() < 920.0 {
+            column![left_col, right_col].spacing(metrics.space_lg).into()
+        } else {
+            row![left_col, right_col].spacing(metrics.space_lg).into()
+        };
 
-    column![player_surface, speed_controls, details_layout]
+    column![player_surface, seek_bar, transport_bar, details_layout]
         .spacing(metrics.space_md)
         .into()
 }
@@ -1035,16 +1275,24 @@ fn render_mini_player_bar<'a>(
     container(
         row![
             text(format!("▶ {} — {}", video.title, video.channel_title))
+                .font(FONT_UI_SEMIBOLD)
                 .size(metrics.font_caption)
                 .width(Length::Fill),
-            button(text(if state.player_playing { loc.t("player.pause") } else { loc.t("player.play") }).size(metrics.font_micro))
-                .on_press(UiMessage::PlayerTogglePlay)
-                .padding([5, 10])
-                .style(primary_button_style(palette, metrics.radius_sm)),
+            button(
+                text(if state.player_playing {
+                    loc.t("player.pause")
+                } else {
+                    loc.t("player.play")
+                })
+                .size(metrics.font_micro)
+            )
+            .on_press(UiMessage::PlayerTogglePlay)
+            .padding([5, 12])
+            .style(primary_button_style(palette, 999.0)),
             button(text("Expand").size(metrics.font_micro))
                 .on_press(UiMessage::OpenVideo(video.id.clone()))
-                .padding([5, 10])
-                .style(secondary_button_style(palette, metrics.radius_sm)),
+                .padding([5, 12])
+                .style(secondary_button_style(palette, 999.0)),
             button(text("✕").size(metrics.font_micro))
                 .on_press(UiMessage::PlayerToggleMini)
                 .padding([5, 8])
@@ -1053,7 +1301,7 @@ fn render_mini_player_bar<'a>(
         .spacing(8)
         .align_y(Alignment::Center),
     )
-    .padding([8, 14])
+    .padding([8, 16])
     .width(Length::Fill)
     .style(move |_| panel_style(palette, palette.bg_elevated, 0.0))
     .into()
@@ -1071,31 +1319,53 @@ fn render_channel_view<'a>(
 
     let is_sub = state.subscribed_ids.contains(&ch.id);
     let is_fav = state.favorite_channels.contains(&ch.id);
+    let tint = deterministic_tint(&ch.title);
 
     let header = container(
         row![
+            avatar_circle(&ch.title, tint, 58.0),
             column![
-                text(&ch.title).size(metrics.font_title),
-                text(loc.t_with_args("channel.subscribers", &[("count", &ch.formatted_subscriber_count())]))
-                    .size(metrics.font_caption)
+                text(&ch.title).font(FONT_UI_BOLD).size(metrics.font_title),
+                text(loc.t_with_args(
+                    "channel.subscribers",
+                    &[("count", &ch.formatted_subscriber_count())],
+                ))
+                .size(metrics.font_caption)
+                .color(palette.accent),
+                text(&ch.description)
+                    .size(metrics.font_body)
                     .color(palette.text_secondary),
-                text(&ch.description).size(metrics.font_body).color(palette.text_secondary),
             ]
             .spacing(4)
             .width(Length::Fill),
-            button(text(if is_sub { loc.t("watch.subscribed") } else { loc.t("watch.subscribe") }).size(metrics.font_caption))
-                .on_press(UiMessage::ToggleChannelSubscribe(ch.id.clone()))
-                .padding([8, 14])
-                .style(primary_button_style(palette, metrics.radius_sm)),
-            button(text(if is_fav { loc.t("channel.favorite_remove") } else { loc.t("channel.favorite_add") }).size(metrics.font_caption))
-                .on_press(UiMessage::ToggleChannelFavorite(ch.id.clone()))
-                .padding([8, 14])
-                .style(secondary_button_style(palette, metrics.radius_sm)),
+            button(
+                text(if is_sub {
+                    loc.t("watch.subscribed")
+                } else {
+                    loc.t("watch.subscribe")
+                })
+                .font(FONT_UI_SEMIBOLD)
+                .size(metrics.font_caption)
+            )
+            .on_press(UiMessage::ToggleChannelSubscribe(ch.id.clone()))
+            .padding([8, 16])
+            .style(primary_button_style(palette, 999.0)),
+            button(
+                text(if is_fav {
+                    loc.t("channel.favorite_remove")
+                } else {
+                    loc.t("channel.favorite_add")
+                })
+                .size(metrics.font_caption)
+            )
+            .on_press(UiMessage::ToggleChannelFavorite(ch.id.clone()))
+            .padding([8, 14])
+            .style(secondary_button_style(palette, 999.0)),
         ]
-        .spacing(12)
+        .spacing(14)
         .align_y(Alignment::Center),
     )
-    .padding(14)
+    .padding(18)
     .width(Length::Fill)
     .style(move |_| palette.card_container_style(metrics.radius_md));
 
@@ -1106,9 +1376,9 @@ fn render_channel_view<'a>(
         Space::with_width(Length::Fill),
         text_input("Filter channel...", &state.channel_filter)
             .on_input(UiMessage::ChannelFilterChanged)
-            .padding([6, 10])
+            .padding([6, 12])
             .width(Length::Fixed(220.0))
-            .style(input_style(palette, metrics.radius_sm)),
+            .style(input_style(palette, 999.0)),
     ]
     .spacing(8)
     .align_y(Alignment::Center);
@@ -1118,7 +1388,7 @@ fn render_channel_view<'a>(
     match state.channel_tab {
         ChannelTab::Videos | ChannelTab::Live => {
             let needle = state.channel_filter.to_lowercase();
-            let list: Vec<Video> = state
+            let matching: Vec<&Video> = state
                 .channel_videos
                 .iter()
                 .filter(|v| {
@@ -1126,22 +1396,11 @@ fn render_channel_view<'a>(
                     let filter_ok = needle.is_empty() || v.title.to_lowercase().contains(&needle);
                     tab_ok && filter_ok
                 })
-                .cloned()
                 .collect();
-            if list.is_empty() {
+            if matching.is_empty() {
                 col = col.push(empty_state(loc.t("search.empty"), String::new(), palette, metrics));
             } else {
                 let cols = metrics.grid_columns(state.content_width());
-                // Render referencing `state.channel_videos` directly
-                let matching: Vec<&Video> = state
-                    .channel_videos
-                    .iter()
-                    .filter(|v| {
-                        let tab_ok = state.channel_tab != ChannelTab::Live || v.is_live();
-                        let filter_ok = needle.is_empty() || v.title.to_lowercase().contains(&needle);
-                        tab_ok && filter_ok
-                    })
-                    .collect();
                 let mut grid2 = Column::new().spacing(metrics.space_md);
                 for chunk in matching.chunks(cols) {
                     let mut r = Row::new().spacing(metrics.space_md);
@@ -1161,14 +1420,14 @@ fn render_channel_view<'a>(
                 col = col.push(
                     container(
                         column![
-                            text(&pl.title).size(metrics.font_heading),
+                            text(&pl.title).font(FONT_UI_SEMIBOLD).size(metrics.font_heading),
                             text(format!("{} items • {}", pl.item_count, pl.description))
                                 .size(metrics.font_caption)
                                 .color(palette.text_secondary),
                         ]
                         .spacing(4),
                     )
-                    .padding(12)
+                    .padding(14)
                     .width(Length::Fill)
                     .style(move |_| palette.card_container_style(metrics.radius_sm)),
                 );
@@ -1187,7 +1446,7 @@ fn render_subscriptions_view<'a>(
 ) -> Element<'a, UiMessage> {
     let mut col = Column::new()
         .spacing(metrics.space_md)
-        .push(text(loc.t("nav.subscriptions")).size(metrics.font_title))
+        .push(text(loc.t("nav.subscriptions")).font(FONT_UI_BOLD).size(metrics.font_title))
         .push(pill_badge(loc.t("library.device_sync_note"), palette, metrics));
 
     if state.subscriptions.is_empty() {
@@ -1199,23 +1458,26 @@ fn render_subscriptions_view<'a>(
         ));
     } else {
         for ch in &state.subscriptions {
+            let tint = deterministic_tint(&ch.title);
             col = col.push(
                 container(
                     row![
+                        avatar_circle(&ch.title, tint, 42.0),
                         column![
-                            text(&ch.title).size(metrics.font_heading),
+                            text(&ch.title).font(FONT_UI_SEMIBOLD).size(metrics.font_heading),
                             text(&ch.description).size(metrics.font_caption).color(palette.text_secondary),
                         ]
                         .spacing(3)
                         .width(Length::Fill),
                         button(text(loc.t("channel.videos")).size(metrics.font_caption))
                             .on_press(UiMessage::OpenChannel(ch.id.clone()))
-                            .padding([7, 12])
-                            .style(secondary_button_style(palette, metrics.radius_sm)),
+                            .padding([7, 14])
+                            .style(secondary_button_style(palette, 999.0)),
                     ]
+                    .spacing(12)
                     .align_y(Alignment::Center),
                 )
-                .padding(12)
+                .padding(14)
                 .width(Length::Fill)
                 .style(move |_| palette.card_container_style(metrics.radius_md)),
             );
@@ -1231,7 +1493,7 @@ fn render_shorts_view<'a>(
     metrics: LayoutMetrics,
 ) -> Element<'a, UiMessage> {
     let controls = row![
-        text(loc.t("nav.shorts")).size(metrics.font_title).width(Length::Fill),
+        text(loc.t("nav.shorts")).font(FONT_UI_BOLD).size(metrics.font_title).width(Length::Fill),
         checkbox(loc.t("shorts.autoplay"), state.shorts_autoplay)
             .on_toggle(UiMessage::ToggleShortsAutoplay),
         checkbox(loc.t("shorts.hide_section"), state.hide_shorts)
@@ -1248,8 +1510,8 @@ fn render_shorts_view<'a>(
     if let Some(short) = state.shorts_videos.get(state.shorts_index) {
         let card = container(
             column![
-                text("⚡ SHORT").size(metrics.font_heading).color(palette.accent),
-                text(&short.title).size(metrics.font_title),
+                accent_badge("⚡ SHORT", palette, metrics),
+                text(&short.title).font(FONT_UI_BOLD).size(metrics.font_title),
                 text(format!("{} • {}", short.channel_title, short.formatted_duration()))
                     .size(metrics.font_body)
                     .color(palette.text_secondary),
@@ -1258,26 +1520,25 @@ fn render_shorts_view<'a>(
                     button(text(loc.t("shorts.prev")).size(metrics.font_caption))
                         .on_press(UiMessage::ShortsPrev)
                         .padding([8, 14])
-                        .style(secondary_button_style(palette, metrics.radius_sm)),
-                    button(text(loc.t("player.play")).size(metrics.font_caption))
+                        .style(secondary_button_style(palette, 999.0)),
+                    button(text(loc.t("player.play")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
                         .on_press(UiMessage::OpenVideo(short.id.clone()))
-                        .padding([8, 18])
-                        .style(primary_button_style(palette, metrics.radius_sm)),
+                        .padding([8, 20])
+                        .style(primary_button_style(palette, 999.0)),
                     button(text(loc.t("shorts.next")).size(metrics.font_caption))
                         .on_press(UiMessage::ShortsNext)
                         .padding([8, 14])
-                        .style(secondary_button_style(palette, metrics.radius_sm)),
+                        .style(secondary_button_style(palette, 999.0)),
                 ]
                 .spacing(10),
             ]
-            .spacing(8)
+            .spacing(10)
             .align_x(Alignment::Center),
         )
         .width(Length::Fixed(380.0))
-        .height(Length::Fixed(520.0))
         .center_x(Length::Fixed(380.0))
-        .center_y(Length::Fixed(520.0))
-        .padding(20)
+        .center_y(Length::Fixed(500.0))
+        .padding(24)
         .style(move |_| palette.card_container_style(metrics.radius_lg));
 
         col = col.push(container(card).width(Length::Fill).center_x(Length::Fill));
@@ -1295,11 +1556,11 @@ fn render_live_view<'a>(
     metrics: LayoutMetrics,
 ) -> Element<'a, UiMessage> {
     let header = row![
-        text(loc.t("nav.live")).size(metrics.font_title).width(Length::Fill),
+        text(loc.t("nav.live")).font(FONT_UI_BOLD).size(metrics.font_title).width(Length::Fill),
         button(text(loc.t("live.toggle_chat")).size(metrics.font_caption))
             .on_press(UiMessage::ToggleLiveChat)
-            .padding([7, 12])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .padding([7, 14])
+            .style(secondary_button_style(palette, 999.0)),
     ]
     .align_y(Alignment::Center);
 
@@ -1319,12 +1580,12 @@ fn render_history_view<'a>(
     metrics: LayoutMetrics,
 ) -> Element<'a, UiMessage> {
     let header = row![
-        text(loc.t("history.title")).size(metrics.font_title).width(Length::Fill),
+        text(loc.t("history.title")).font(FONT_UI_BOLD).size(metrics.font_title).width(Length::Fill),
         pill_badge(loc.t("home.local_badge"), palette, metrics),
         button(text(loc.t("history.clear")).size(metrics.font_caption))
             .on_press(UiMessage::ClearWatchHistory)
-            .padding([7, 12])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
+            .padding([7, 14])
+            .style(secondary_button_style(palette, 999.0)),
     ]
     .spacing(8)
     .align_y(Alignment::Center);
@@ -1342,7 +1603,7 @@ fn render_history_view<'a>(
             col = col.push(
                 button(
                     row![
-                        text(&item.title).size(metrics.font_body).width(Length::Fill),
+                        text(&item.title).font(FONT_UI_SEMIBOLD).size(metrics.font_body).width(Length::Fill),
                         text(format!(
                             "{} • {}",
                             item.channel_title,
@@ -1358,7 +1619,7 @@ fn render_history_view<'a>(
                     item.playback_position_seconds,
                 ))
                 .width(Length::Fill)
-                .padding(10)
+                .padding(12)
                 .style(secondary_button_style(palette, metrics.radius_sm)),
             );
         }
@@ -1374,23 +1635,23 @@ fn render_playlists_view<'a>(
 ) -> Element<'a, UiMessage> {
     let mut col = Column::new()
         .spacing(metrics.space_md)
-        .push(text(loc.t("nav.playlists")).size(metrics.font_title))
+        .push(text(loc.t("nav.playlists")).font(FONT_UI_BOLD).size(metrics.font_title))
         .push(pill_badge(loc.t("library.device_sync_note"), palette, metrics))
         .push(
             row![
                 text_input(&loc.t("library.create_playlist"), &state.new_playlist_draft)
                     .on_input(UiMessage::CreateLocalPlaylistDraftChanged)
                     .on_submit(UiMessage::CreateLocalPlaylist)
-                    .padding([7, 10])
+                    .padding([8, 12])
                     .style(input_style(palette, metrics.radius_sm))
                     .width(Length::Fill),
-                button(text(loc.t("library.create_playlist")).size(metrics.font_caption))
+                button(text(loc.t("library.create_playlist")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
                     .on_press(UiMessage::CreateLocalPlaylist)
-                    .padding([7, 14])
+                    .padding([8, 14])
                     .style(primary_button_style(palette, metrics.radius_sm)),
                 button(text(loc.t("library.export_playlists")).size(metrics.font_caption))
                     .on_press(UiMessage::ExportLocalPlaylists)
-                    .padding([7, 14])
+                    .padding([8, 14])
                     .style(secondary_button_style(palette, metrics.radius_sm)),
             ]
             .spacing(8),
@@ -1414,7 +1675,7 @@ fn render_playlists_view<'a>(
                 container(
                     row![
                         column![
-                            text(&pl.title).size(metrics.font_heading),
+                            text(&pl.title).font(FONT_UI_SEMIBOLD).size(metrics.font_heading),
                             text(format!("{} items • {}", pl.item_count, pl.description))
                                 .size(metrics.font_caption)
                                 .color(palette.text_secondary),
@@ -1425,7 +1686,7 @@ fn render_playlists_view<'a>(
                     ]
                     .align_y(Alignment::Center),
                 )
-                .padding(12)
+                .padding(14)
                 .width(Length::Fill)
                 .style(move |_| palette.card_container_style(metrics.radius_md)),
             );
@@ -1433,7 +1694,7 @@ fn render_playlists_view<'a>(
     }
 
     if !state.bookmarks.is_empty() {
-        col = col.push(text(loc.t("library.bookmarks")).size(metrics.font_heading));
+        col = col.push(text(loc.t("library.bookmarks")).font(FONT_UI_BOLD).size(metrics.font_heading));
         for b in &state.bookmarks {
             col = col.push(
                 button(text(format!(
@@ -1448,7 +1709,7 @@ fn render_playlists_view<'a>(
                     b.timestamp_seconds,
                 ))
                 .width(Length::Fill)
-                .padding(8)
+                .padding(10)
                 .style(secondary_button_style(palette, metrics.radius_sm)),
             );
         }
@@ -1465,15 +1726,15 @@ fn render_favorites_view<'a>(
 ) -> Element<'a, UiMessage> {
     let mut col = Column::new()
         .spacing(metrics.space_md)
-        .push(text(loc.t("nav.favorites")).size(metrics.font_title));
+        .push(text(loc.t("nav.favorites")).font(FONT_UI_BOLD).size(metrics.font_title));
     if state.favorite_channels.is_empty() {
         col = col.push(empty_state(loc.t("search.empty"), String::new(), palette, metrics));
     } else {
         for cid in &state.favorite_channels {
             col = col.push(
-                button(text(format!("★ {}", cid)).size(metrics.font_body))
+                button(text(format!("★  {}", cid)).size(metrics.font_body))
                     .on_press(UiMessage::OpenChannel(cid.clone()))
-                    .padding(10)
+                    .padding(12)
                     .width(Length::Fill)
                     .style(secondary_button_style(palette, metrics.radius_sm)),
             );
@@ -1495,17 +1756,17 @@ fn render_settings_view<'a>(
         filter_chip(loc.t("settings.privacy"), state.settings_tab == SettingsTab::Privacy, UiMessage::SwitchSettingsTab(SettingsTab::Privacy), palette, metrics),
         filter_chip(loc.t("settings.updates"), state.settings_tab == SettingsTab::Updates, UiMessage::SwitchSettingsTab(SettingsTab::Updates), palette, metrics),
         Space::with_width(Length::Fill),
-        button(text(loc.t("settings.save")).size(metrics.font_caption))
+        button(text(loc.t("settings.save")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
             .on_press(UiMessage::SaveSettings)
-            .padding([7, 14])
-            .style(primary_button_style(palette, metrics.radius_sm)),
+            .padding([7, 16])
+            .style(primary_button_style(palette, 999.0)),
     ]
     .spacing(8)
     .align_y(Alignment::Center);
 
     let mut col = Column::new()
         .spacing(metrics.space_md)
-        .push(text(loc.t("settings.title")).size(metrics.font_title))
+        .push(text(loc.t("settings.title")).font(FONT_UI_BOLD).size(metrics.font_title))
         .push(tabs);
 
     match state.settings_tab {
@@ -1519,8 +1780,8 @@ fn render_settings_view<'a>(
                 Space::with_width(Length::Fill),
                 button(text(loc.t("settings.recommend_profile")).size(metrics.font_caption))
                     .on_press(UiMessage::RecommendProfileForHardware)
-                    .padding([7, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                    .padding([7, 14])
+                    .style(secondary_button_style(palette, 999.0)),
             ]
             .spacing(8)
             .align_y(Alignment::Center);
@@ -1535,14 +1796,27 @@ fn render_settings_view<'a>(
             col = col
                 .push(profiles)
                 .push(perf_stats)
-                .push(checkbox(loc.t("settings.h264ify"), state.settings.h264ify_enabled).on_toggle(UiMessage::ToggleH264ify))
-                .push(checkbox(loc.t("settings.animations"), state.settings.performance.enable_animations).on_toggle(UiMessage::ToggleAnimations))
-                .push(checkbox(loc.t("settings.comments_default"), state.settings.performance.enable_comments).on_toggle(UiMessage::ToggleAutoComments));
+                .push(
+                    container(
+                        column![
+                            checkbox(loc.t("settings.h264ify"), state.settings.h264ify_enabled)
+                                .on_toggle(UiMessage::ToggleH264ify),
+                            checkbox(loc.t("settings.animations"), state.settings.performance.enable_animations)
+                                .on_toggle(UiMessage::ToggleAnimations),
+                            checkbox(loc.t("settings.comments_default"), state.settings.performance.enable_comments)
+                                .on_toggle(UiMessage::ToggleAutoComments),
+                        ]
+                        .spacing(12),
+                    )
+                    .padding(16)
+                    .width(Length::Fill)
+                    .style(move |_| palette.card_container_style(metrics.radius_md)),
+                );
         }
         SettingsTab::Appearance => {
             let current_theme = ThemeKind::from_key(&state.settings.theme);
             let theme_row = row![
-                text(loc.t("settings.theme")).size(metrics.font_body),
+                text(loc.t("settings.theme")).font(FONT_UI_SEMIBOLD).size(metrics.font_body),
                 filter_chip("Graphite Dark".into(), current_theme == ThemeKind::GraphiteDark, UiMessage::SelectTheme(ThemeKind::GraphiteDark), palette, metrics),
                 filter_chip("Pure Black".into(), current_theme == ThemeKind::PureBlack, UiMessage::SelectTheme(ThemeKind::PureBlack), palette, metrics),
                 filter_chip("Arctic Light".into(), current_theme == ThemeKind::ArcticLight, UiMessage::SelectTheme(ThemeKind::ArcticLight), palette, metrics),
@@ -1554,7 +1828,7 @@ fn render_settings_view<'a>(
 
             let current_density = DensityMode::from_key(&state.settings.density);
             let density_row = row![
-                text(loc.t("settings.density")).size(metrics.font_body),
+                text(loc.t("settings.density")).font(FONT_UI_SEMIBOLD).size(metrics.font_body),
                 filter_chip("Compact".into(), current_density == DensityMode::Compact, UiMessage::SelectDensity(DensityMode::Compact), palette, metrics),
                 filter_chip("Standard".into(), current_density == DensityMode::Standard, UiMessage::SelectDensity(DensityMode::Standard), palette, metrics),
                 filter_chip("Comfortable".into(), current_density == DensityMode::Comfortable, UiMessage::SelectDensity(DensityMode::Comfortable), palette, metrics),
@@ -1563,10 +1837,10 @@ fn render_settings_view<'a>(
             .align_y(Alignment::Center);
 
             let accent_row = row![
-                text(loc.t("settings.accent")).size(metrics.font_body),
-                text_input("#FF0033", &state.settings.accent_color)
+                text(loc.t("settings.accent")).font(FONT_UI_SEMIBOLD).size(metrics.font_body),
+                text_input("#FF2D55", &state.settings.accent_color)
                     .on_input(UiMessage::AccentColorChanged)
-                    .padding([6, 10])
+                    .padding([6, 12])
                     .width(Length::Fixed(130.0))
                     .style(input_style(palette, metrics.radius_sm)),
                 text(format!("{}: {:.2}x", loc.t("settings.scale"), state.settings.ui_scale)).size(metrics.font_body),
@@ -1576,12 +1850,17 @@ fn render_settings_view<'a>(
             .spacing(12)
             .align_y(Alignment::Center);
 
-            col = col.push(theme_row).push(density_row).push(accent_row);
+            col = col.push(
+                container(column![theme_row, density_row, accent_row].spacing(14))
+                    .padding(16)
+                    .width(Length::Fill)
+                    .style(move |_| palette.card_container_style(metrics.radius_md)),
+            );
         }
         SettingsTab::General => {
             let lang = state.settings.language.as_str();
             let lang_row = row![
-                text(loc.t("settings.language")).size(metrics.font_body),
+                text(loc.t("settings.language")).font(FONT_UI_SEMIBOLD).size(metrics.font_body),
                 filter_chip("English".into(), lang == "en", UiMessage::SelectLocale("en".into()), palette, metrics),
                 filter_chip("Українська".into(), lang == "uk", UiMessage::SelectLocale("uk".into()), palette, metrics),
                 filter_chip("Русский".into(), lang == "ru", UiMessage::SelectLocale("ru".into()), palette, metrics),
@@ -1589,43 +1868,61 @@ fn render_settings_view<'a>(
             .spacing(8)
             .align_y(Alignment::Center);
 
-            col = col.push(lang_row);
+            col = col.push(
+                container(lang_row)
+                    .padding(16)
+                    .width(Length::Fill)
+                    .style(move |_| palette.card_container_style(metrics.radius_md)),
+            );
         }
         SettingsTab::Privacy => {
-            col = col
-                .push(checkbox(loc.t("settings.private_mode"), state.private_mode).on_toggle(UiMessage::TogglePrivateMode))
-                .push(
-                    row![
-                        button(text(loc.t("settings.clear_cache")).size(metrics.font_caption))
-                            .on_press(UiMessage::ClearThumbnailCache)
-                            .padding([8, 14])
-                            .style(secondary_button_style(palette, metrics.radius_sm)),
-                        button(text(loc.t("history.clear")).size(metrics.font_caption))
-                            .on_press(UiMessage::ClearWatchHistory)
-                            .padding([8, 14])
-                            .style(secondary_button_style(palette, metrics.radius_sm)),
+            col = col.push(
+                container(
+                    column![
+                        checkbox(loc.t("settings.private_mode"), state.private_mode)
+                            .on_toggle(UiMessage::TogglePrivateMode),
+                        row![
+                            button(text(loc.t("settings.clear_cache")).size(metrics.font_caption))
+                                .on_press(UiMessage::ClearThumbnailCache)
+                                .padding([8, 14])
+                                .style(secondary_button_style(palette, metrics.radius_sm)),
+                            button(text(loc.t("history.clear")).size(metrics.font_caption))
+                                .on_press(UiMessage::ClearWatchHistory)
+                                .padding([8, 14])
+                                .style(secondary_button_style(palette, metrics.radius_sm)),
+                        ]
+                        .spacing(10),
                     ]
-                    .spacing(10),
-                );
+                    .spacing(14),
+                )
+                .padding(16)
+                .width(Length::Fill)
+                .style(move |_| palette.card_container_style(metrics.radius_md)),
+            );
         }
         SettingsTab::Updates => {
             col = col.push(
-                row![
-                    button(text(loc.t("settings.check_updates")).size(metrics.font_caption))
-                        .on_press(UiMessage::CheckForUpdates)
-                        .padding([8, 14])
-                        .style(primary_button_style(palette, metrics.radius_sm)),
-                    text(
-                        state
-                            .update_status_text
-                            .clone()
-                            .unwrap_or_else(|| format!("v{}", env!("CARGO_PKG_VERSION")))
-                    )
-                    .size(metrics.font_body)
-                    .color(palette.text_secondary),
-                ]
-                .spacing(12)
-                .align_y(Alignment::Center),
+                container(
+                    row![
+                        button(text(loc.t("settings.check_updates")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
+                            .on_press(UiMessage::CheckForUpdates)
+                            .padding([8, 16])
+                            .style(primary_button_style(palette, 999.0)),
+                        text(
+                            state
+                                .update_status_text
+                                .clone()
+                                .unwrap_or_else(|| format!("v{}", env!("CARGO_PKG_VERSION"))),
+                        )
+                        .size(metrics.font_body)
+                        .color(palette.text_secondary),
+                    ]
+                    .spacing(12)
+                    .align_y(Alignment::Center),
+                )
+                .padding(16)
+                .width(Length::Fill)
+                .style(move |_| palette.card_container_style(metrics.radius_md)),
             );
         }
     }
@@ -1640,15 +1937,15 @@ fn render_diagnostics_view<'a>(
     metrics: LayoutMetrics,
 ) -> Element<'a, UiMessage> {
     let header = row![
-        text(loc.t("diagnostics.title")).size(metrics.font_title).width(Length::Fill),
+        text(loc.t("diagnostics.title")).font(FONT_UI_BOLD).size(metrics.font_title).width(Length::Fill),
         button(text(loc.t("home.refresh")).size(metrics.font_caption))
             .on_press(UiMessage::RefreshDiagnostics)
-            .padding([7, 12])
-            .style(secondary_button_style(palette, metrics.radius_sm)),
-        button(text(loc.t("diagnostics.export_report")).size(metrics.font_caption))
-            .on_press(UiMessage::ExportDiagnosticReport)
             .padding([7, 14])
-            .style(primary_button_style(palette, metrics.radius_sm)),
+            .style(secondary_button_style(palette, 999.0)),
+        button(text(loc.t("diagnostics.export_report")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
+            .on_press(UiMessage::ExportDiagnosticReport)
+            .padding([7, 16])
+            .style(primary_button_style(palette, 999.0)),
     ]
     .spacing(8)
     .align_y(Alignment::Center);
@@ -1701,7 +1998,7 @@ fn render_diagnostics_view<'a>(
         stat_tile(
             "Auth",
             if state.active_account.is_some() {
-                "Authenticated (PKCE)".to_string()
+                "Authenticated (Google OAuth)".to_string()
             } else {
                 loc.t("auth.guest")
             },
@@ -1721,56 +2018,228 @@ fn render_account_modal<'a>(
     palette: ThemePalette,
     metrics: LayoutMetrics,
 ) -> Element<'a, UiMessage> {
-    let mut modal_col = Column::new()
-        .spacing(metrics.space_md)
-        .push(
-            row![
-                text(loc.t("auth.switch_account")).size(metrics.font_title).width(Length::Fill),
-                button(text("✕").size(metrics.font_body))
-                    .on_press(UiMessage::ToggleAccountModal(false))
-                    .padding([4, 10])
-                    .style(ghost_button_style(palette, metrics.radius_sm, false)),
-            ]
-            .align_y(Alignment::Center),
-        )
-        .push(text(loc.t("auth.oauth_note")).size(metrics.font_caption).color(palette.text_secondary))
-        .push(
-            button(text(loc.t("auth.guest")).size(metrics.font_body))
-                .on_press(UiMessage::SwitchToAccount(None))
+    let header = row![
+        text(loc.t("auth.switch_account"))
+            .font(FONT_UI_BOLD)
+            .size(metrics.font_title)
+            .width(Length::Fill),
+        button(text("✕").size(metrics.font_body))
+            .on_press(UiMessage::ToggleAccountModal(false))
+            .padding([4, 10])
+            .style(ghost_button_style(palette, metrics.radius_sm, false)),
+    ]
+    .align_y(Alignment::Center);
+
+    let auth_tabs = row![
+        filter_chip(
+            loc.t("auth.device_tab"),
+            state.auth_tab == AuthTab::DeviceCode,
+            UiMessage::SwitchAuthTab(AuthTab::DeviceCode),
+            palette,
+            metrics,
+        ),
+        filter_chip(
+            loc.t("auth.pkce_tab"),
+            state.auth_tab == AuthTab::BrowserPkce,
+            UiMessage::SwitchAuthTab(AuthTab::BrowserPkce),
+            palette,
+            metrics,
+        ),
+        Space::with_width(Length::Fill),
+        button(text(loc.t("auth.credentials_title")).size(metrics.font_micro))
+            .on_press(UiMessage::ToggleCredentialsForm)
+            .padding([5, 10])
+            .style(secondary_button_style(palette, 999.0)),
+    ]
+    .spacing(8)
+    .align_y(Alignment::Center);
+
+    let auth_panel: Element<'a, UiMessage> = match state.auth_tab {
+        AuthTab::DeviceCode => {
+            if let Some(ref dev) = state.device_auth {
+                container(
+                    column![
+                        text(loc.t("auth.device_title"))
+                            .font(FONT_UI_BOLD)
+                            .size(metrics.font_heading),
+                        text(&dev.verification_url)
+                            .font(FONT_MONO_BOLD)
+                            .size(metrics.font_body)
+                            .color(palette.accent),
+                        activation_code_box(&dev.user_code, palette, metrics),
+                        text(format!(
+                            "{}  ({}s)",
+                            dev.status_message, dev.remaining_secs
+                        ))
+                        .size(metrics.font_caption)
+                        .color(palette.text_secondary),
+                        row![
+                            button(
+                                text(loc.t("auth.open_device_url"))
+                                    .font(FONT_UI_SEMIBOLD)
+                                    .size(metrics.font_caption)
+                            )
+                            .on_press(UiMessage::OpenDeviceUrl)
+                            .padding([8, 16])
+                            .style(primary_button_style(palette, 999.0)),
+                            button(text(loc.t("auth.copy_code")).size(metrics.font_caption))
+                                .on_press(UiMessage::CopyDeviceCode)
+                                .padding([8, 14])
+                                .style(secondary_button_style(palette, 999.0)),
+                            Space::with_width(Length::Fill),
+                            button(text(loc.t("auth.cancel_device")).size(metrics.font_caption))
+                                .on_press(UiMessage::CancelDeviceLogin)
+                                .padding([8, 14])
+                                .style(secondary_button_style(palette, 999.0)),
+                        ]
+                        .spacing(8)
+                        .align_y(Alignment::Center),
+                    ]
+                    .spacing(12)
+                    .align_x(Alignment::Center),
+                )
+                .padding(16)
+                .width(Length::Fill)
+                .style(move |_| palette.card_container_style(metrics.radius_md))
+                .into()
+            } else {
+                container(
+                    column![
+                        text(loc.t("auth.device_title"))
+                            .font(FONT_UI_BOLD)
+                            .size(metrics.font_heading),
+                        text(loc.t("auth.device_steps"))
+                            .size(metrics.font_caption)
+                            .color(palette.text_secondary),
+                        button(
+                            text(if state.device_auth_loading {
+                                "...".to_string()
+                            } else {
+                                loc.t("auth.request_code")
+                            })
+                            .font(FONT_UI_SEMIBOLD)
+                            .size(metrics.font_body)
+                        )
+                        .on_press(UiMessage::StartDeviceLogin)
+                        .padding([10, 20])
+                        .width(Length::Fill)
+                        .style(primary_button_style(palette, metrics.radius_sm)),
+                    ]
+                    .spacing(12),
+                )
+                .padding(16)
+                .width(Length::Fill)
+                .style(move |_| palette.card_container_style(metrics.radius_md))
+                .into()
+            }
+        }
+        AuthTab::BrowserPkce => container(
+            column![
+                text(loc.t("auth.oauth_note"))
+                    .size(metrics.font_caption)
+                    .color(palette.text_secondary),
+                button(
+                    text(format!("+ {}", loc.t("auth.login")))
+                        .font(FONT_UI_SEMIBOLD)
+                        .size(metrics.font_body)
+                )
+                .on_press(UiMessage::StartGoogleSignIn)
                 .width(Length::Fill)
                 .padding(10)
-                .style(secondary_button_style(palette, metrics.radius_sm)),
-        );
-
-    for acc in &state.accounts {
-        modal_col = modal_col.push(
-            row![
-                button(text(format!("{} ({})", acc.name, acc.email)).size(metrics.font_body))
-                    .on_press(UiMessage::SwitchToAccount(Some(acc.id.clone())))
-                    .width(Length::Fill)
-                    .padding(10)
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text(loc.t("auth.logout")).size(metrics.font_caption))
-                    .on_press(UiMessage::SignOutAccount(acc.id.clone()))
-                    .padding([10, 12])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                .style(primary_button_style(palette, metrics.radius_sm)),
             ]
-            .spacing(8),
+            .spacing(12),
+        )
+        .padding(16)
+        .width(Length::Fill)
+        .style(move |_| palette.card_container_style(metrics.radius_md))
+        .into(),
+    };
+
+    let mut modal_col = Column::new()
+        .spacing(metrics.space_md)
+        .push(header)
+        .push(auth_tabs)
+        .push(auth_panel);
+
+    if state.show_credentials_form {
+        modal_col = modal_col.push(
+            container(
+                column![
+                    text(loc.t("auth.credentials_title"))
+                        .font(FONT_UI_SEMIBOLD)
+                        .size(metrics.font_caption),
+                    text_input("GOOGLE_CLIENT_ID (...apps.googleusercontent.com)", &state.cred_client_id)
+                        .on_input(UiMessage::CredClientIdChanged)
+                        .padding([7, 10])
+                        .size(metrics.font_caption)
+                        .style(input_style(palette, metrics.radius_sm)),
+                    text_input("GOOGLE_CLIENT_SECRET (for TV/Device client)", &state.cred_client_secret)
+                        .on_input(UiMessage::CredClientSecretChanged)
+                        .secure(true)
+                        .padding([7, 10])
+                        .size(metrics.font_caption)
+                        .style(input_style(palette, metrics.radius_sm)),
+                    text_input("YOUTUBE_API_KEY (optional for public data)", &state.cred_api_key)
+                        .on_input(UiMessage::CredApiKeyChanged)
+                        .padding([7, 10])
+                        .size(metrics.font_caption)
+                        .style(input_style(palette, metrics.radius_sm)),
+                    button(
+                        text(loc.t("auth.save_credentials"))
+                            .font(FONT_UI_SEMIBOLD)
+                            .size(metrics.font_caption)
+                    )
+                    .on_press(UiMessage::SaveGoogleCredentials)
+                    .padding([7, 14])
+                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                ]
+                .spacing(8),
+            )
+            .padding(14)
+            .width(Length::Fill)
+            .style(move |_| palette.card_container_style(metrics.radius_md)),
         );
     }
 
     modal_col = modal_col.push(
-        button(text(format!("+ {}", loc.t("auth.login"))).size(metrics.font_body))
-            .on_press(UiMessage::StartGoogleSignIn)
+        button(text(loc.t("auth.guest")).size(metrics.font_body))
+            .on_press(UiMessage::SwitchToAccount(None))
             .width(Length::Fill)
             .padding(10)
-            .style(primary_button_style(palette, metrics.radius_sm)),
+            .style(secondary_button_style(palette, metrics.radius_sm)),
     );
+
+    for acc in &state.accounts {
+        let tint = deterministic_tint(&acc.name);
+        modal_col = modal_col.push(
+            row![
+                button(
+                    row![
+                        avatar_circle(&acc.name, tint, 26.0),
+                        text(format!("{} ({})", acc.name, acc.email)).size(metrics.font_body),
+                    ]
+                    .spacing(10)
+                    .align_y(Alignment::Center),
+                )
+                .on_press(UiMessage::SwitchToAccount(Some(acc.id.clone())))
+                .width(Length::Fill)
+                .padding(8)
+                .style(secondary_button_style(palette, metrics.radius_sm)),
+                button(text(loc.t("auth.logout")).size(metrics.font_caption))
+                    .on_press(UiMessage::SignOutAccount(acc.id.clone()))
+                    .padding([8, 12])
+                    .style(secondary_button_style(palette, metrics.radius_sm)),
+            ]
+            .spacing(8)
+            .align_y(Alignment::Center),
+        );
+    }
 
     container(
         container(modal_col)
-            .width(Length::Fixed(460.0))
-            .padding(20)
+            .width(Length::Fixed(540.0))
+            .padding(22)
             .style(move |_| panel_style(palette, palette.bg_elevated, metrics.radius_lg)),
     )
     .width(Length::Fill)

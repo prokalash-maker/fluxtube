@@ -15,22 +15,33 @@ FluxTube works out-of-the-box in **Offline Demo Mode** using local mock fixtures
    YOUTUBE_API_KEY=your_api_key_here
    ```
 
-## 3. Configure OAuth Consent Screen & Desktop Client ID
+## 3. Choose Your Google OAuth 2.0 Client Type
+
+FluxTube supports **two official Google OAuth 2.0 flows**, configurable directly inside the app (**Account -> API & OAuth Credentials**) or via `.env`:
+
+### Option A (Recommended): TV / Device Code Login (`google.com/device`)
+Best for easy sign-in by entering a short one-time code at `https://www.google.com/device` (no local loopback redirect server required):
 1. Go to **APIs & Services -> OAuth consent screen**.
-2. Choose **External** (or Internal for Workspace).
-3. Add minimal required scopes:
-   - `openid`
-   - `profile`
-   - `email`
-   - `https://www.googleapis.com/auth/youtube.readonly` (or `youtube.force-ssl` if posting comments / rating / managing playlists).
-4. While testing, add your Google account email under **Test users**.
-   - *Note for public distribution*: Requesting sensitive/restricted YouTube scopes for public users requires Google OAuth app verification.
-5. Go to **Credentials -> Create Credentials -> OAuth client ID -> Desktop app**.
-6. Copy the Client ID (and optional Client Secret) into `.env`:
-   ```env
-   GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=your_client_secret
-   ```
+2. Choose **External** (or Internal for Workspace) and add scopes:
+   - `openid`, `profile`, `email`
+   - `https://www.googleapis.com/auth/youtube.readonly`
+3. While in Testing mode, add your Google account email under **Test users**.
+4. Go to **Credentials -> Create Credentials -> OAuth client ID**.
+5. Choose Application type: **TVs and Limited Input devices**.
+6. Copy both **Client ID** and **Client Secret** (Google requires Client Secret for TV/Limited Input token polling).
+
+### Option B: Desktop App + Browser PKCE
+1. In **Credentials -> Create Credentials -> OAuth client ID**, choose **Desktop app**.
+2. Copy the **Client ID** (and optional Client Secret).
+
+You can paste `Client ID`, `Client Secret`, and `YouTube API Key` directly inside FluxTube (**Sign In -> API & OAuth Credentials**, stored in SQLite settings + OS Keychain/Credential Manager) or in `.env`:
+```env
+GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_client_secret
+YOUTUBE_API_KEY=your_api_key_here
+```
+
+> *Note for public distribution*: Requesting YouTube scopes for external users outside your Test users list requires Google OAuth app verification.
 
 ## 4. Quota Considerations
 - Default YouTube Data API v3 quota is **10,000 units/day** (resets at midnight Pacific Time).

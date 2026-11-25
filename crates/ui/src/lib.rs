@@ -2,8 +2,11 @@ pub mod messages;
 pub mod state;
 pub mod views;
 
-pub use messages::{ChannelTab, Route, SettingsTab, UiMessage};
-pub use state::{extract_chapters, format_seconds_hms, SidebarItemConfig, UiState};
+pub use messages::{AuthTab, ChannelTab, Route, SettingsTab, UiMessage};
+pub use state::{
+    extract_chapters, format_relative_age, format_seconds_hms, DeviceAuthState, SidebarItemConfig,
+    UiState,
+};
 pub use views::{render_app, route_label};
 
 #[cfg(test)]

@@ -37,6 +37,12 @@ pub enum SettingsTab {
     Updates,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AuthTab {
+    DeviceCode,
+    BrowserPkce,
+}
+
 #[derive(Debug, Clone)]
 pub enum UiMessage {
     // Navigation & Sidebar
@@ -66,6 +72,7 @@ pub enum UiMessage {
     OpenVideo(String),
     OpenVideoAt(String, u64),
     PlayerTogglePlay,
+    PlayerSeekTo(u64),
     PlayerSeekRelative(i64),
     PlayerVolumeChanged(f32),
     PlayerToggleMute,
@@ -127,9 +134,19 @@ pub enum UiMessage {
     ExportDiagnosticReport,
     CheckForUpdates,
 
-    // Auth & Accounts
+    // Auth & Accounts (Device Flow + PKCE + API Credentials)
     ToggleAccountModal(bool),
+    SwitchAuthTab(AuthTab),
+    StartDeviceLogin,
+    CancelDeviceLogin,
+    CopyDeviceCode,
+    OpenDeviceUrl,
     StartGoogleSignIn,
+    ToggleCredentialsForm,
+    CredClientIdChanged(String),
+    CredClientSecretChanged(String),
+    CredApiKeyChanged(String),
+    SaveGoogleCredentials,
     SwitchToAccount(Option<String>),
     SignOutAccount(String),
 

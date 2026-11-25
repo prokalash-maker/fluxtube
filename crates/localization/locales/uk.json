@@ -155,9 +155,20 @@
     "login": "Увійти",
     "logout": "Вийти",
     "guest": "Гостьовий режим",
-    "switch_account": "Змінити обліковий запис",
-    "oauth_note": "Використовує Google OAuth 2.0 PKCE через системний браузер. Пароль ніколи не вводиться у FluxTube.",
-    "mock_mode_badge": "Офлайн демо-режим"
+    "switch_account": "Акаунт Google",
+    "oauth_note": "Використовує офіційний Google OAuth 2.0 через системний браузер. Пароль ніколи не вводиться у FluxTube.",
+    "mock_mode_badge": "Офлайн демо-режим",
+    "device_tab": "Код пристрою (TV)",
+    "pkce_tab": "Браузер PKCE",
+    "device_title": "Підключення через google.com/device",
+    "device_steps": "1. Отримайте одноразовий код нижче  •  2. Відкрийте google.com/device у браузері  •  3. Введіть код і підтвердіть доступ",
+    "request_code": "Отримати код підключення",
+    "open_device_url": "Відкрити google.com/device",
+    "copy_code": "Копіювати код",
+    "cancel_device": "Скасувати",
+    "waiting_approval": "Очікування підтвердження в браузері...",
+    "credentials_title": "Ключі Google Cloud API",
+    "save_credentials": "Зберегти ключі"
   },
   "history": {
     "title": "Історія переглядів",

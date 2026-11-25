@@ -1,8 +1,12 @@
 use crate::coordinator::TokenRefreshCoordinator;
+use crate::device::{
+    poll_device_token_once, request_device_code as http_request_device_code, DeviceCodeResponse,
+    DeviceTokenPoll, GOOGLE_DEVICE_CODE_ENDPOINT,
+};
 use crate::error::AuthError;
 use crate::loopback::LoopbackListener;
 use crate::pkce::PkceSession;
-use crate::token::{exchange_code_for_tokens, fetch_user_info};
+use crate::token::{exchange_code_for_tokens, fetch_user_info, TokenExchangeResponse};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use fluxtube_core::UserProfile;
 use fluxtube_security::CredentialVault;
@@ -18,7 +22,15 @@ pub struct AuthSession {
     pub expires_at: DateTime<Utc>,
 }
 
-/// Google OAuth 2.0 PKCE authentication manager.
+/// Non-blocking result from polling a pending TV/Device OAuth authorization.
+#[derive(Debug, Clone)]
+pub enum DevicePollOutcome {
+    Pending,
+    SlowDown,
+    Authorized(AuthSession),
+}
+
+/// Google OAuth 2.0 PKCE + Device Flow authentication manager.
 pub struct OAuthManager {
     vault: CredentialVault,
     storage: StorageManager,
@@ -29,6 +41,7 @@ pub struct OAuthManager {
     scopes: Vec<String>,
     token_endpoint: String,
     userinfo_endpoint: String,
+    device_code_endpoint: String,
 }
 
 impl OAuthManager {
@@ -57,6 +70,7 @@ impl OAuthManager {
             scopes,
             token_endpoint: "https://oauth2.googleapis.com/token".to_string(),
             userinfo_endpoint: "https://www.googleapis.com/oauth2/v3/userinfo".to_string(),
+            device_code_endpoint: GOOGLE_DEVICE_CODE_ENDPOINT.to_string(),
         }
     }
 
@@ -88,7 +102,13 @@ impl OAuthManager {
             scopes,
             token_endpoint,
             userinfo_endpoint,
+            device_code_endpoint: GOOGLE_DEVICE_CODE_ENDPOINT.to_string(),
         }
+    }
+
+    pub fn with_device_endpoint(mut self, endpoint: impl Into<String>) -> Self {
+        self.device_code_endpoint = endpoint.into();
+        self
     }
 
     /// Access coordinator reference.
@@ -133,11 +153,52 @@ impl OAuthManager {
         )
         .await?;
 
+        self.finalize_token_session(tokens, &pkce.state[..8]).await
+    }
+
+    /// Requests a Google OAuth 2.0 Device Code for TV / Limited-Input verification (`google.com/device`).
+    pub async fn request_device_code(&self) -> Result<DeviceCodeResponse, AuthError> {
+        let scopes_slice: Vec<&str> = self.scopes.iter().map(|s| s.as_str()).collect();
+        http_request_device_code(
+            &self.http_client,
+            &self.device_code_endpoint,
+            &self.client_id,
+            &scopes_slice,
+        )
+        .await
+    }
+
+    /// Polls the token endpoint once for a pending `device_code`.
+    pub async fn poll_device_token(&self, device_code: &str) -> Result<DevicePollOutcome, AuthError> {
+        match poll_device_token_once(
+            &self.http_client,
+            &self.token_endpoint,
+            &self.client_id,
+            self.client_secret.as_deref(),
+            device_code,
+        )
+        .await?
+        {
+            DeviceTokenPoll::Pending => Ok(DevicePollOutcome::Pending),
+            DeviceTokenPoll::SlowDown => Ok(DevicePollOutcome::SlowDown),
+            DeviceTokenPoll::Tokens(tokens) => {
+                let fallback_tag = &device_code[..device_code.len().min(8)];
+                let session = self.finalize_token_session(tokens, fallback_tag).await?;
+                Ok(DevicePollOutcome::Authorized(session))
+            }
+        }
+    }
+
+    async fn finalize_token_session(
+        &self,
+        tokens: TokenExchangeResponse,
+        fallback_tag: &str,
+    ) -> Result<AuthSession, AuthError> {
         // Attempt to fetch profile info from userinfo endpoint
         let user_info = fetch_user_info(&self.http_client, &self.userinfo_endpoint, &tokens.access_token)
             .await
             .unwrap_or_else(|_| crate::token::GoogleUserInfo {
-                sub: Some(format!("user_{}", &pkce.state[..8])),
+                sub: Some(format!("user_{}", fallback_tag)),
                 id: None,
                 email: Some("user@fluxtube.app".to_string()),
                 name: Some("FluxTube User".to_string()),

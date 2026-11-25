@@ -1,4 +1,4 @@
-use crate::tokens::{LayoutMetrics, ThemePalette};
+use crate::tokens::{LayoutMetrics, ThemePalette, FONT_MONO_BOLD, FONT_UI_BOLD, FONT_UI_SEMIBOLD};
 use iced::widget::{button, column, container, row, text, text_input, Column, Container};
 use iced::{Alignment, Background, Border, Color, Element, Length};
 
@@ -46,6 +46,47 @@ pub fn secondary_button_style(
     }
 }
 
+pub fn nav_pill_button_style(
+    palette: ThemePalette,
+    radius: f32,
+    active: bool,
+) -> impl Fn(&iced::Theme, button::Status) -> button::Style {
+    move |_theme, status| {
+        let bg = if active {
+            Some(Background::Color(palette.accent_soft))
+        } else if matches!(status, button::Status::Hovered | button::Status::Pressed) {
+            Some(Background::Color(palette.bg_hover))
+        } else {
+            None
+        };
+        let border = if active {
+            Border {
+                color: Color {
+                    a: 0.35,
+                    ..palette.accent
+                },
+                width: 1.0,
+                radius: radius.into(),
+            }
+        } else {
+            Border {
+                radius: radius.into(),
+                ..Default::default()
+            }
+        };
+        button::Style {
+            background: bg,
+            text_color: if active {
+                palette.accent
+            } else {
+                palette.text_primary
+            },
+            border,
+            ..Default::default()
+        }
+    }
+}
+
 pub fn ghost_button_style(
     palette: ThemePalette,
     radius: f32,
@@ -69,6 +110,31 @@ pub fn ghost_button_style(
             border: Border {
                 radius: radius.into(),
                 ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+}
+
+pub fn chip_button_style(
+    palette: ThemePalette,
+    active: bool,
+) -> impl Fn(&iced::Theme, button::Status) -> button::Style {
+    move |_theme, status| {
+        let (bg, border_color, text_color) = if active {
+            (palette.accent, palette.accent, palette.on_accent)
+        } else if matches!(status, button::Status::Hovered | button::Status::Pressed) {
+            (palette.bg_hover, palette.text_muted, palette.text_primary)
+        } else {
+            (palette.bg_elevated, palette.border_subtle, palette.text_secondary)
+        };
+        button::Style {
+            background: Some(Background::Color(bg)),
+            text_color,
+            border: Border {
+                color: border_color,
+                width: 1.0,
+                radius: 999.0.into(),
             },
             ..Default::default()
         }
@@ -135,9 +201,62 @@ pub fn panel_style(palette: ThemePalette, bg: Color, radius: f32) -> container::
             width: 1.0,
             radius: radius.into(),
         },
-        text_color: Some(palette.text_primary),
+        text_color: Some(self::text_color(palette)),
         ..Default::default()
     }
+}
+
+fn text_color(palette: ThemePalette) -> Color {
+    palette.text_primary
+}
+
+/// Circular monogram avatar used for channels and user accounts.
+pub fn avatar_circle<'a, Message: 'a>(
+    label: &str,
+    bg_color: Color,
+    size: f32,
+) -> Container<'a, Message> {
+    let ch = label
+        .trim()
+        .trim_start_matches('@')
+        .chars()
+        .next()
+        .unwrap_or('F')
+        .to_uppercase()
+        .to_string();
+    container(
+        text(ch)
+            .font(FONT_UI_BOLD)
+            .size((size * 0.44).max(11.0))
+            .color(Color::WHITE),
+    )
+    .width(Length::Fixed(size))
+    .height(Length::Fixed(size))
+    .center_x(Length::Fixed(size))
+    .center_y(Length::Fixed(size))
+    .style(move |_| container::Style {
+        background: Some(Background::Color(bg_color)),
+        border: Border {
+            radius: (size / 2.0).into(),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
+}
+
+/// Deterministic pleasant avatar color derived from channel or account name.
+pub fn deterministic_tint(seed: &str) -> Color {
+    const PALETTE: [(u8, u8, u8); 6] = [
+        (239, 68, 68),
+        (59, 130, 246),
+        (16, 185, 129),
+        (168, 85, 247),
+        (245, 158, 11),
+        (236, 72, 153),
+    ];
+    let hash = seed.bytes().fold(0usize, |acc, b| acc.wrapping_add(b as usize));
+    let (r, g, b) = PALETTE[hash % PALETTE.len()];
+    Color::from_rgb8(r, g, b)
 }
 
 pub fn pill_badge<'a, Message: 'a>(
@@ -147,16 +266,68 @@ pub fn pill_badge<'a, Message: 'a>(
 ) -> Container<'a, Message> {
     container(
         text(label.into())
+            .font(FONT_UI_SEMIBOLD)
             .size(metrics.font_micro)
             .color(palette.text_secondary),
     )
-    .padding([3, 8])
+    .padding([4, 10])
     .style(move |_| container::Style {
         background: Some(Background::Color(palette.bg_elevated)),
         border: Border {
             color: palette.border_subtle,
             width: 1.0,
-            radius: metrics.radius_sm.into(),
+            radius: 999.0.into(),
+        },
+        ..Default::default()
+    })
+}
+
+pub fn accent_badge<'a, Message: 'a>(
+    label: impl Into<String>,
+    palette: ThemePalette,
+    metrics: LayoutMetrics,
+) -> Container<'a, Message> {
+    container(
+        text(label.into())
+            .font(FONT_UI_SEMIBOLD)
+            .size(metrics.font_micro)
+            .color(palette.accent),
+    )
+    .padding([4, 10])
+    .style(move |_| container::Style {
+        background: Some(Background::Color(palette.accent_soft)),
+        border: Border {
+            color: Color {
+                a: 0.35,
+                ..palette.accent
+            },
+            width: 1.0,
+            radius: 999.0.into(),
+        },
+        ..Default::default()
+    })
+}
+
+pub fn activation_code_box<'a, Message: 'a>(
+    code: impl Into<String>,
+    palette: ThemePalette,
+    metrics: LayoutMetrics,
+) -> Container<'a, Message> {
+    container(
+        text(code.into())
+            .font(FONT_MONO_BOLD)
+            .size(34.0 * metrics.scale)
+            .color(palette.text_primary),
+    )
+    .padding([16, 28])
+    .width(Length::Fill)
+    .center_x(Length::Fill)
+    .style(move |_| container::Style {
+        background: Some(Background::Color(palette.bg_primary)),
+        border: Border {
+            color: palette.accent,
+            width: 1.5,
+            radius: metrics.radius_md.into(),
         },
         ..Default::default()
     })
@@ -174,6 +345,7 @@ pub fn stat_tile<'a, Message: 'a>(
                 .size(metrics.font_caption)
                 .color(palette.text_muted),
             text(value.into())
+                .font(FONT_UI_SEMIBOLD)
                 .size(metrics.font_heading)
                 .color(palette.text_primary),
         ]
@@ -196,6 +368,7 @@ pub fn empty_state<'a, Message: 'a>(
             .align_x(Alignment::Center)
             .push(
                 text(title.into())
+                    .font(FONT_UI_SEMIBOLD)
                     .size(metrics.font_heading)
                     .color(palette.text_primary),
             )

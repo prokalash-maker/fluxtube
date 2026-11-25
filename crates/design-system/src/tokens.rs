@@ -1,5 +1,24 @@
-use iced::{Background, Border, Color};
+use iced::font::{Family, Weight};
+use iced::{Background, Border, Color, Font};
 use serde::{Deserialize, Serialize};
+
+pub const FONT_UI_SEMIBOLD: Font = Font {
+    family: Family::SansSerif,
+    weight: Weight::Semibold,
+    ..Font::DEFAULT
+};
+
+pub const FONT_UI_BOLD: Font = Font {
+    family: Family::SansSerif,
+    weight: Weight::Bold,
+    ..Font::DEFAULT
+};
+
+pub const FONT_MONO_BOLD: Font = Font {
+    family: Family::Monospace,
+    weight: Weight::Bold,
+    ..Font::MONOSPACE
+};
 
 /// Supported FluxTube UI theme presets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -78,6 +97,7 @@ pub struct ThemePalette {
     pub text_muted: Color,
     pub accent: Color,
     pub accent_hover: Color,
+    pub accent_soft: Color,
     pub on_accent: Color,
     pub danger: Color,
     pub success: Color,
@@ -105,10 +125,15 @@ fn lighten(c: Color, delta: f32) -> Color {
     )
 }
 
+fn with_alpha(c: Color, alpha: f32) -> Color {
+    Color { a: alpha, ..c }
+}
+
 impl ThemePalette {
     pub fn resolve(kind: ThemeKind, accent_hex: &str, system_dark: bool) -> Self {
-        let accent = parse_hex_color(accent_hex).unwrap_or_else(|| Color::from_rgb8(255, 0, 51));
+        let accent = parse_hex_color(accent_hex).unwrap_or_else(|| Color::from_rgb8(255, 45, 85));
         let accent_hover = lighten(accent, 0.08);
+        let accent_soft = with_alpha(accent, 0.14);
 
         let effective = match kind {
             ThemeKind::System => {
@@ -124,17 +149,18 @@ impl ThemePalette {
         match effective {
             ThemeKind::GraphiteDark => Self {
                 is_dark: true,
-                bg_primary: Color::from_rgb8(24, 24, 27),
-                bg_secondary: Color::from_rgb8(31, 31, 35),
-                bg_elevated: Color::from_rgb8(39, 39, 44),
-                bg_hover: Color::from_rgb8(49, 49, 56),
-                surface_card: Color::from_rgb8(34, 34, 39),
-                border_subtle: Color::from_rgb8(56, 56, 64),
-                text_primary: Color::from_rgb8(244, 244, 245),
-                text_secondary: Color::from_rgb8(180, 180, 190),
-                text_muted: Color::from_rgb8(128, 128, 138),
+                bg_primary: Color::from_rgb8(17, 18, 22),
+                bg_secondary: Color::from_rgb8(23, 25, 30),
+                bg_elevated: Color::from_rgb8(31, 34, 41),
+                bg_hover: Color::from_rgb8(41, 45, 55),
+                surface_card: Color::from_rgb8(26, 28, 34),
+                border_subtle: Color::from_rgb8(46, 50, 61),
+                text_primary: Color::from_rgb8(244, 245, 248),
+                text_secondary: Color::from_rgb8(178, 183, 196),
+                text_muted: Color::from_rgb8(122, 128, 144),
                 accent,
                 accent_hover,
+                accent_soft,
                 on_accent: Color::WHITE,
                 danger: Color::from_rgb8(239, 68, 68),
                 success: Color::from_rgb8(34, 197, 94),
@@ -142,17 +168,18 @@ impl ThemePalette {
             },
             ThemeKind::PureBlack => Self {
                 is_dark: true,
-                bg_primary: Color::from_rgb8(0, 0, 0),
-                bg_secondary: Color::from_rgb8(12, 12, 14),
-                bg_elevated: Color::from_rgb8(20, 20, 23),
-                bg_hover: Color::from_rgb8(32, 32, 36),
-                surface_card: Color::from_rgb8(16, 16, 19),
-                border_subtle: Color::from_rgb8(38, 38, 42),
-                text_primary: Color::from_rgb8(250, 250, 250),
-                text_secondary: Color::from_rgb8(170, 170, 178),
-                text_muted: Color::from_rgb8(115, 115, 125),
+                bg_primary: Color::BLACK,
+                bg_secondary: Color::from_rgb8(10, 10, 13),
+                bg_elevated: Color::from_rgb8(19, 20, 24),
+                bg_hover: Color::from_rgb8(31, 33, 39),
+                surface_card: Color::from_rgb8(14, 15, 18),
+                border_subtle: Color::from_rgb8(36, 38, 44),
+                text_primary: Color::from_rgb8(250, 250, 252),
+                text_secondary: Color::from_rgb8(172, 176, 188),
+                text_muted: Color::from_rgb8(116, 120, 132),
                 accent,
                 accent_hover,
+                accent_soft,
                 on_accent: Color::WHITE,
                 danger: Color::from_rgb8(248, 113, 113),
                 success: Color::from_rgb8(74, 222, 128),
@@ -160,17 +187,18 @@ impl ThemePalette {
             },
             ThemeKind::ArcticLight => Self {
                 is_dark: false,
-                bg_primary: Color::from_rgb8(247, 248, 250),
-                bg_secondary: Color::from_rgb8(239, 241, 245),
-                bg_elevated: Color::from_rgb8(255, 255, 255),
-                bg_hover: Color::from_rgb8(229, 233, 240),
+                bg_primary: Color::from_rgb8(245, 246, 249),
+                bg_secondary: Color::from_rgb8(255, 255, 255),
+                bg_elevated: Color::from_rgb8(241, 243, 248),
+                bg_hover: Color::from_rgb8(231, 235, 242),
                 surface_card: Color::from_rgb8(255, 255, 255),
-                border_subtle: Color::from_rgb8(216, 222, 233),
-                text_primary: Color::from_rgb8(24, 28, 36),
-                text_secondary: Color::from_rgb8(76, 86, 106),
+                border_subtle: Color::from_rgb8(221, 226, 235),
+                text_primary: Color::from_rgb8(19, 23, 32),
+                text_secondary: Color::from_rgb8(75, 85, 105),
                 text_muted: Color::from_rgb8(120, 130, 148),
                 accent,
                 accent_hover,
+                accent_soft,
                 on_accent: Color::WHITE,
                 danger: Color::from_rgb8(220, 38, 38),
                 success: Color::from_rgb8(22, 163, 74),
@@ -178,17 +206,18 @@ impl ThemePalette {
             },
             ThemeKind::Custom => Self {
                 is_dark: true,
-                bg_primary: Color::from_rgb8(18, 22, 28),
-                bg_secondary: Color::from_rgb8(24, 29, 38),
-                bg_elevated: Color::from_rgb8(31, 38, 49),
-                bg_hover: Color::from_rgb8(42, 51, 66),
-                surface_card: Color::from_rgb8(26, 32, 42),
-                border_subtle: Color::from_rgb8(50, 60, 76),
-                text_primary: Color::from_rgb8(241, 245, 249),
-                text_secondary: Color::from_rgb8(176, 190, 208),
-                text_muted: Color::from_rgb8(120, 136, 158),
+                bg_primary: Color::from_rgb8(15, 20, 28),
+                bg_secondary: Color::from_rgb8(21, 27, 37),
+                bg_elevated: Color::from_rgb8(29, 37, 50),
+                bg_hover: Color::from_rgb8(40, 50, 67),
+                surface_card: Color::from_rgb8(24, 31, 42),
+                border_subtle: Color::from_rgb8(48, 59, 77),
+                text_primary: Color::from_rgb8(242, 246, 252),
+                text_secondary: Color::from_rgb8(178, 192, 212),
+                text_muted: Color::from_rgb8(120, 136, 160),
                 accent,
                 accent_hover,
+                accent_soft,
                 on_accent: Color::WHITE,
                 danger: Color::from_rgb8(239, 68, 68),
                 success: Color::from_rgb8(34, 197, 94),
@@ -243,9 +272,9 @@ impl LayoutMetrics {
             DensityMode::Comfortable => 1.2,
         };
         let card_min = match density {
-            DensityMode::Compact => 230.0 * s,
-            DensityMode::Standard => 270.0 * s,
-            DensityMode::Comfortable => 310.0 * s,
+            DensityMode::Compact => 240.0 * s,
+            DensityMode::Standard => 275.0 * s,
+            DensityMode::Comfortable => 315.0 * s,
         };
 
         Self {
@@ -255,16 +284,16 @@ impl LayoutMetrics {
             space_sm: 8.0 * d_mult * s,
             space_md: 14.0 * d_mult * s,
             space_lg: 22.0 * d_mult * s,
-            radius_sm: 6.0 * s,
-            radius_md: 10.0 * s,
-            radius_lg: 14.0 * s,
+            radius_sm: 8.0 * s,
+            radius_md: 12.0 * s,
+            radius_lg: 16.0 * s,
             font_micro: 11.0 * s,
             font_caption: 12.5 * s,
             font_body: 14.0 * s,
-            font_heading: 17.5 * s,
+            font_heading: 17.0 * s,
             font_title: 22.0 * s,
-            sidebar_expanded_width: 224.0 * s,
-            sidebar_collapsed_width: 64.0 * s,
+            sidebar_expanded_width: 228.0 * s,
+            sidebar_collapsed_width: 68.0 * s,
             card_min_width: card_min,
         }
     }

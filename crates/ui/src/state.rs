@@ -1,4 +1,4 @@
-use crate::messages::{ChannelTab, Route, SettingsTab};
+use crate::messages::{AuthTab, ChannelTab, Route, SettingsTab};
 use fluxtube_core::{
     Bookmark, Channel, Comment, HistoryEntry, Playlist, QuotaStatus, UserProfile, Video,
     VideoRating,
@@ -15,6 +15,16 @@ pub struct SidebarItemConfig {
     pub route: Route,
     pub pinned: bool,
     pub visible: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeviceAuthState {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_url: String,
+    pub remaining_secs: u64,
+    pub poll_interval_secs: u64,
+    pub status_message: String,
 }
 
 pub struct UiState {
@@ -36,6 +46,13 @@ pub struct UiState {
     pub active_account: Option<UserProfile>,
     pub accounts: Vec<UserProfile>,
     pub show_account_modal: bool,
+    pub auth_tab: AuthTab,
+    pub device_auth: Option<DeviceAuthState>,
+    pub device_auth_loading: bool,
+    pub show_credentials_form: bool,
+    pub cred_client_id: String,
+    pub cred_client_secret: String,
+    pub cred_api_key: String,
 
     pub home_category: String,
     pub home_videos: Vec<Video>,
@@ -105,7 +122,12 @@ pub struct UiState {
 }
 
 impl UiState {
-    pub fn new(settings: AppSettings, hardware: HardwareProfile, system_dark: bool, is_mock_mode: bool) -> Self {
+    pub fn new(
+        settings: AppSettings,
+        hardware: HardwareProfile,
+        system_dark: bool,
+        is_mock_mode: bool,
+    ) -> Self {
         let sidebar_items = vec![
             SidebarItemConfig { route: Route::Home, pinned: true, visible: true },
             SidebarItemConfig { route: Route::Trending, pinned: true, visible: true },
@@ -147,6 +169,13 @@ impl UiState {
             active_account: None,
             accounts: Vec::new(),
             show_account_modal: false,
+            auth_tab: AuthTab::DeviceCode,
+            device_auth: None,
+            device_auth_loading: false,
+            show_credentials_form: false,
+            cred_client_id: String::new(),
+            cred_client_secret: String::new(),
+            cred_api_key: String::new(),
             home_category: "All".to_string(),
             home_videos: Vec::new(),
             trending_videos: Vec::new(),
@@ -281,5 +310,19 @@ pub fn format_seconds_hms(total_secs: u64) -> String {
         format!("{}:{:02}:{:02}", h, m, s)
     } else {
         format!("{}:{:02}", m, s)
+    }
+}
+
+pub fn format_relative_age(published_at: chrono::DateTime<chrono::Utc>) -> String {
+    let delta = chrono::Utc::now().signed_duration_since(published_at);
+    let mins = delta.num_minutes().max(0);
+    if mins < 60 {
+        format!("{}m ago", mins.max(1))
+    } else if mins < 60 * 24 {
+        format!("{}h ago", mins / 60)
+    } else if mins < 60 * 24 * 30 {
+        format!("{}d ago", mins / (60 * 24))
+    } else {
+        format!("{}mo ago", (mins / (60 * 24 * 30)).max(1))
     }
 }

@@ -17,6 +17,12 @@ pub enum AuthError {
     #[error("Loopback listener timed out waiting for authorization callback")]
     LoopbackTimeout,
 
+    #[error("Google OAuth Client ID is not configured")]
+    MissingClientId,
+
+    #[error("Device activation code expired; please request a new code")]
+    DeviceCodeExpired,
+
     #[error("HTTP request failed: {0}")]
     Http(#[from] reqwest::Error),
 
