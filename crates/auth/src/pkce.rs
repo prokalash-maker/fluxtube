@@ -1,10 +1,12 @@
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
-use rand::RngCore;
+use crate::config::GOOGLE_AUTH_ENDPOINT;
+use oauth2::basic::BasicClient;
+use oauth2::{
+    AuthUrl, ClientId, CsrfToken, PkceCodeChallenge, RedirectUrl, Scope,
+};
 use sha2::{Digest, Sha256};
-use url::Url;
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 
-/// Session holding PKCE code verifier, challenge, and CSRF state token.
+/// Session holding PKCE code verifier, S256 challenge, and CSRF state token.
 #[derive(Debug, Clone)]
 pub struct PkceSession {
     pub code_verifier: String,
@@ -19,22 +21,15 @@ impl Default for PkceSession {
 }
 
 impl PkceSession {
-    /// Generates a new PKCE session with high-entropy code verifier, S256 challenge, and CSRF state.
+    /// Generates a new PKCE session using `oauth2`'s cryptographically secure random generators.
     pub fn new() -> Self {
-        let mut verifier_bytes = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut verifier_bytes);
-        let code_verifier = URL_SAFE_NO_PAD.encode(verifier_bytes);
-
-        let code_challenge = Self::compute_s256_challenge(&code_verifier);
-
-        let mut state_bytes = [0u8; 24];
-        rand::thread_rng().fill_bytes(&mut state_bytes);
-        let state = URL_SAFE_NO_PAD.encode(state_bytes);
+        let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
+        let csrf = CsrfToken::new_random();
 
         Self {
-            code_verifier,
-            code_challenge,
-            state,
+            code_verifier: verifier.secret().clone(),
+            code_challenge: challenge.as_str().to_string(),
+            state: csrf.secret().clone(),
         }
     }
 
@@ -46,29 +41,58 @@ impl PkceSession {
         URL_SAFE_NO_PAD.encode(hash)
     }
 
-    /// Builds the Google OAuth 2.0 authorization URL for desktop PKCE.
+    /// Builds the official Google OAuth 2.0 authorization URL for desktop PKCE via `oauth2::BasicClient`.
     pub fn build_authorization_url(
         &self,
         client_id: &str,
         redirect_uri: &str,
         scopes: &[&str],
     ) -> String {
-        let mut url = Url::parse("https://accounts.google.com/o/oauth2/v2/auth")
-            .expect("Valid Google OAuth base URL");
+        self.build_authorization_url_with_endpoint(
+            GOOGLE_AUTH_ENDPOINT,
+            client_id,
+            redirect_uri,
+            scopes,
+        )
+    }
 
-        let scope_str = scopes.join(" ");
+    /// Builds an authorization URL using a custom auth endpoint (for Desktop JSON or test mocks).
+    pub fn build_authorization_url_with_endpoint(
+        &self,
+        auth_endpoint: &str,
+        client_id: &str,
+        redirect_uri: &str,
+        scopes: &[&str],
+    ) -> String {
+        let auth_url = AuthUrl::new(auth_endpoint.to_string())
+            .unwrap_or_else(|_| AuthUrl::new(GOOGLE_AUTH_ENDPOINT.to_string()).unwrap());
+        let redirect = RedirectUrl::new(redirect_uri.to_string())
+            .expect("Valid loopback redirect URI");
 
-        url.query_pairs_mut()
-            .append_pair("client_id", client_id)
-            .append_pair("redirect_uri", redirect_uri)
-            .append_pair("response_type", "code")
-            .append_pair("scope", &scope_str)
-            .append_pair("code_challenge", &self.code_challenge)
-            .append_pair("code_challenge_method", "S256")
-            .append_pair("state", &self.state)
-            .append_pair("access_type", "offline")
-            .append_pair("prompt", "consent");
+        let client = BasicClient::new(
+            ClientId::new(client_id.to_string()),
+            None,
+            auth_url,
+            None,
+        )
+        .set_redirect_uri(redirect);
 
+        let challenge = PkceCodeChallenge::from_code_verifier_sha256(
+            &oauth2::PkceCodeVerifier::new(self.code_verifier.clone()),
+        );
+        let csrf = CsrfToken::new(self.state.clone());
+
+        let mut req = client
+            .authorize_url(|| csrf)
+            .set_pkce_challenge(challenge)
+            .add_extra_param("access_type", "offline")
+            .add_extra_param("prompt", "consent");
+
+        for s in scopes {
+            req = req.add_scope(Scope::new((*s).to_string()));
+        }
+
+        let (url, _state) = req.url();
         url.to_string()
     }
 }
@@ -79,7 +103,6 @@ mod tests {
 
     #[test]
     fn test_pkce_rfc7636_test_vector() {
-        // RFC 7636 Appendix B test vector
         let verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
         let expected_challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 
@@ -91,9 +114,8 @@ mod tests {
     fn test_pkce_session_generation() {
         let session = PkceSession::new();
 
-        // Verifier length must be between 43 and 128 characters per RFC 7636 §4.1
         assert!(session.code_verifier.len() >= 43 && session.code_verifier.len() <= 128);
-        assert_eq!(session.code_challenge.len(), 43); // 32 bytes base64url no-pad is 43 chars
+        assert_eq!(session.code_challenge.len(), 43);
         assert!(!session.state.is_empty());
 
         let url = session.build_authorization_url(

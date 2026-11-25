@@ -27,6 +27,8 @@ pub trait YouTubeDataApi: Send + Sync {
 
     async fn get_channel_details(&self, channel_id_or_handle: &str) -> Result<Channel, YouTubeApiError>;
 
+    async fn get_my_channel(&self, access_token: &str) -> Result<Channel, YouTubeApiError>;
+
     async fn get_channel_playlists(
         &self,
         channel_id: &str,
@@ -436,6 +438,36 @@ impl YouTubeDataApi for LiveYouTubeApiClient {
             .map(RawChannelItem::into_domain)
             .ok_or_else(|| {
                 YouTubeApiError::NotFound(format!("Channel '{}' not found", channel_id_or_handle))
+            })
+    }
+
+    async fn get_my_channel(&self, access_token: &str) -> Result<Channel, YouTubeApiError> {
+        let query = vec![
+            (
+                "part",
+                "snippet,contentDetails,statistics,brandingSettings".to_string(),
+            ),
+            ("mine", "true".to_string()),
+        ];
+
+        let raw: RawChannelListResponse = self
+            .execute_json(
+                reqwest::Method::GET,
+                "channels",
+                &query,
+                Some(access_token),
+                None,
+                false,
+                1,
+            )
+            .await?;
+
+        raw.items
+            .into_iter()
+            .next()
+            .map(RawChannelItem::into_domain)
+            .ok_or_else(|| {
+                YouTubeApiError::NotFound("No YouTube channel found for signed-in Google account".to_string())
             })
     }
 

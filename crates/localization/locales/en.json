@@ -117,6 +117,7 @@
     "appearance": "Appearance",
     "performance": "Performance",
     "privacy": "Privacy & Data",
+    "google_api": "Google API",
     "updates": "Updates",
     "language": "Language",
     "theme": "Theme",
@@ -168,7 +169,19 @@
     "cancel_device": "Cancel",
     "waiting_approval": "Waiting for approval in your browser...",
     "credentials_title": "Google Cloud API Credentials",
-    "save_credentials": "Save Credentials"
+    "save_credentials": "Save Credentials",
+    "import_json": "Import OAuth JSON...",
+    "clear_credentials": "Clear Credentials",
+    "cancel_login": "Cancel Browser Sign-In",
+    "retry_login": "Re-authorize",
+    "revoke_access": "Revoke Google Access",
+    "session_status": "Session Status",
+    "last_refresh": "Last Token Refresh",
+    "granted_scopes": "Granted Scopes",
+    "api_status": "YouTube API Status",
+    "your_channel": "Connected YouTube Channel",
+    "test_connection": "Test Connection",
+    "reauth_required": "Session expired or revoked — re-authorization required"
   },
   "history": {
     "title": "Watch History",

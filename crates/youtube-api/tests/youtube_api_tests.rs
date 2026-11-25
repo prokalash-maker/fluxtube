@@ -226,3 +226,58 @@ async fn test_live_youtube_api_error_mapping() {
     let err_quota = api.get_video_details(&["v1"]).await.unwrap_err();
     assert!(matches!(err_quota, YouTubeApiError::QuotaExceeded(_)));
 }
+
+#[tokio::test]
+async fn test_live_youtube_api_my_channel_and_401() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path("/channels"))
+        .and(query_param("mine", "true"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "items": [{
+                "id": "UC_my_channel_001",
+                "snippet": {
+                    "title": "My Personal Channel",
+                    "description": "Tech & Rust",
+                    "customUrl": "@mypersonal"
+                },
+                "statistics": {
+                    "subscriberCount": "1200",
+                    "videoCount": "18"
+                },
+                "contentDetails": {
+                    "relatedPlaylists": {
+                        "uploads": "UU_my_channel_001"
+                    }
+                }
+            }]
+        })))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/channels"))
+        .and(query_param("mine", "true"))
+        .respond_with(ResponseTemplate::new(401).set_body_json(serde_json::json!({
+            "error": {
+                "code": 401,
+                "message": "Invalid Credentials"
+            }
+        })))
+        .mount(&server)
+        .await;
+
+    let http = ResilientHttpClient::builder().build().unwrap();
+    let quota = Arc::new(QuotaTracker::new(10_000, 3_000));
+    let api = LiveYouTubeApiClient::with_base_url(http, quota, "", server.uri());
+
+    let ch = api.get_my_channel("ya29.valid_tok").await.unwrap();
+    assert_eq!(ch.id, "UC_my_channel_001");
+    assert_eq!(ch.title, "My Personal Channel");
+    assert_eq!(ch.custom_url.as_deref(), Some("@mypersonal"));
+
+    let err_401 = api.get_my_channel("ya29.expired_tok").await.unwrap_err();
+    assert!(matches!(err_401, YouTubeApiError::Unauthorized(_)));
+}

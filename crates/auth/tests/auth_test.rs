@@ -245,3 +245,212 @@ async fn test_google_device_code_flow_pending_then_authorized() {
         AuthError::MissingClientId
     ));
 }
+
+#[tokio::test]
+async fn test_token_manager_http_401_recovery_and_invalid_grant_stops_loop() {
+    let server = MockServer::start().await;
+
+    // 1. First refresh succeeds
+    Mock::given(method("POST"))
+        .and(path("/token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "access_token": "ya29.recovered_token",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        })))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+
+    // 2. Subsequent refresh returns invalid_grant (revoked / expired refresh token)
+    Mock::given(method("POST"))
+        .and(path("/token"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(serde_json::json!({
+            "error": "invalid_grant",
+            "error_description": "Token has been expired or revoked."
+        })))
+        .expect(1) // Must NOT loop infinitely when reauth is already flagged!
+        .mount(&server)
+        .await;
+
+    let vault = CredentialVault::in_memory();
+    vault.store_token("acc_401", "refresh_valid_then_revoked").unwrap();
+    let storage = StorageManager::open_in_memory().unwrap();
+    let manager = OAuthManager::with_endpoints(
+        vault.clone(),
+        storage,
+        reqwest::Client::new(),
+        "desktop_client_id".to_string(),
+        None,
+        vec![],
+        format!("{}/token", server.uri()),
+        format!("{}/userinfo", server.uri()),
+    );
+
+    // Seed stale cached access token, then simulate HTTP 401 recovery
+    manager
+        .coordinator()
+        .store_tokens("acc_401", "stale_token".to_string(), 3600, None)
+        .unwrap();
+    let fresh = manager.handle_unauthorized("acc_401").await.unwrap();
+    assert_eq!(fresh, "ya29.recovered_token");
+
+    // Next 401 hits revoked refresh token -> InvalidGrant & sets is_reauth_required
+    let err1 = manager.handle_unauthorized("acc_401").await.unwrap_err();
+    assert!(matches!(err1, AuthError::InvalidGrant(_)));
+    assert!(manager.coordinator().is_reauth_required("acc_401"));
+
+    // Subsequent call must short-circuit locally without hitting /token again
+    let err2 = manager
+        .coordinator()
+        .get_valid_access_token("acc_401")
+        .await
+        .unwrap_err();
+    assert!(matches!(err2, AuthError::InvalidGrant(_)));
+}
+
+#[tokio::test]
+async fn test_session_restore_after_restart_without_relogin() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "access_token": "ya29.restored_after_restart",
+            "expires_in": 3600,
+            "token_type": "Bearer"
+        })))
+        .mount(&server)
+        .await;
+
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("fluxtube_restart.sqlite");
+    let vault = CredentialVault::in_memory();
+
+    let profile = UserProfile {
+        id: "google_sub_999".to_string(),
+        email: "restored@gmail.com".to_string(),
+        name: "Restored User".to_string(),
+        picture: None,
+        is_active: true,
+        created_at: Utc::now(),
+    };
+
+    {
+        let storage1 = StorageManager::open(&db_path).unwrap();
+        storage1.save_account(&profile, true).unwrap();
+        vault.store_token("google_sub_999", "1//persisted_refresh_tok").unwrap();
+    }
+
+    // Reopen fresh StorageManager & OAuthManager (empty RAM cache)
+    let storage2 = StorageManager::open(&db_path).unwrap();
+    let mgr2 = OAuthManager::with_endpoints(
+        vault,
+        storage2,
+        reqwest::Client::new(),
+        "desktop_client_id".to_string(),
+        None,
+        fluxtube_auth::default_google_scopes(),
+        format!("{}/token", server.uri()),
+        format!("{}/userinfo", server.uri()),
+    );
+
+    let active = mgr2.get_active_account().unwrap().unwrap();
+    assert_eq!(active.id, "google_sub_999");
+
+    let restored_access = mgr2.validate_and_restore_session(&active.id).await.unwrap();
+    assert_eq!(restored_access, "ya29.restored_after_restart");
+    assert!(mgr2.coordinator().last_refresh_at(&active.id).is_some());
+}
+
+#[tokio::test]
+async fn test_revoke_and_logout_calls_google_revoke_and_cleans_vault() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/revoke"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let vault = CredentialVault::in_memory();
+    vault.store_token("acc_revoke", "1//rt_to_revoke").unwrap();
+    let storage = StorageManager::open_in_memory().unwrap();
+    storage
+        .save_account(
+            &UserProfile {
+                id: "acc_revoke".to_string(),
+                email: "rev@gmail.com".to_string(),
+                name: "Rev User".to_string(),
+                picture: None,
+                is_active: true,
+                created_at: Utc::now(),
+            },
+            true,
+        )
+        .unwrap();
+
+    let mgr = OAuthManager::with_endpoints(
+        vault.clone(),
+        storage.clone(),
+        reqwest::Client::new(),
+        "desktop_client_id".to_string(),
+        None,
+        vec![],
+        format!("{}/token", server.uri()),
+        format!("{}/userinfo", server.uri()),
+    )
+    .with_revoke_endpoint(format!("{}/revoke", server.uri()));
+
+    mgr.revoke_and_logout("acc_revoke").await.unwrap();
+    assert_eq!(vault.get_token("acc_revoke").unwrap(), None);
+    assert_eq!(storage.get_active_account().unwrap(), None);
+}
+
+#[tokio::test]
+async fn test_desktop_json_import_and_invalid_client_mapping() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/token"))
+        .respond_with(ResponseTemplate::new(401).set_body_json(serde_json::json!({
+            "error": "invalid_client",
+            "error_description": "The OAuth client was not found."
+        })))
+        .mount(&server)
+        .await;
+
+    let json = r#"{
+        "installed": {
+            "client_id": "bad-client.apps.googleusercontent.com",
+            "project_id": "fluxtube-desktop",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": ["http://localhost"]
+        }
+    }"#;
+    let cfg = fluxtube_auth::DesktopOAuthConfig::from_google_json_str(json).unwrap();
+    let vault = CredentialVault::in_memory();
+    vault.store_token("acc_bad", "rt").unwrap();
+    let storage = StorageManager::open_in_memory().unwrap();
+
+    let mut mgr = OAuthManager::from_desktop_config(
+        vault,
+        storage,
+        reqwest::Client::new(),
+        &cfg,
+        fluxtube_auth::default_google_scopes(),
+    );
+    // Point token endpoint to WireMock
+    mgr = OAuthManager::with_endpoints(
+        mgr.vault().clone(),
+        mgr.storage().clone(),
+        reqwest::Client::new(),
+        cfg.client_id.clone(),
+        None,
+        fluxtube_auth::default_google_scopes(),
+        format!("{}/token", server.uri()),
+        format!("{}/userinfo", server.uri()),
+    );
+
+    let err = mgr.refresh_access_token("acc_bad").await.unwrap_err();
+    assert!(matches!(err, AuthError::InvalidConfig(_)));
+}

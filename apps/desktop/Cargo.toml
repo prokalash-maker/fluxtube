@@ -30,7 +30,10 @@ fluxtube-design-system = { workspace = true }
 fluxtube-ui = { workspace = true }
 iced = { workspace = true }
 tokio = { workspace = true }
+tokio-util = { workspace = true }
 reqwest = { workspace = true }
 chrono = { workspace = true }
 serde_json = { workspace = true }
+secrecy = { workspace = true }
+rfd = { workspace = true }
 tracing = { workspace = true }

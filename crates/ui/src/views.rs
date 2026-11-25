@@ -132,10 +132,32 @@ fn render_top_bar<'a>(
     let account_chip: Element<'a, UiMessage> = match &state.active_account {
         Some(acc) => {
             let tint = deterministic_tint(&acc.name);
+            let avatar_widget: Element<'a, UiMessage> = match acc
+                .picture
+                .as_ref()
+                .and_then(|url| state.thumbnails.get(url))
+            {
+                Some(handle) => container(
+                    image(handle.clone())
+                        .width(Length::Fixed(24.0))
+                        .height(Length::Fixed(24.0))
+                        .content_fit(iced::ContentFit::Cover),
+                )
+                .width(Length::Fixed(24.0))
+                .height(Length::Fixed(24.0))
+                .clip(true)
+                .into(),
+                None => avatar_circle(&acc.name, tint, 24.0).into(),
+            };
+            let label = if state.auth_reauth_required {
+                format!("{} (!)", acc.name)
+            } else {
+                acc.name.clone()
+            };
             button(
                 row![
-                    avatar_circle(&acc.name, tint, 24.0),
-                    text(&acc.name).font(FONT_UI_SEMIBOLD).size(metrics.font_caption),
+                    avatar_widget,
+                    text(label).font(FONT_UI_SEMIBOLD).size(metrics.font_caption),
                 ]
                 .spacing(8)
                 .align_y(Alignment::Center),
@@ -1754,6 +1776,7 @@ fn render_settings_view<'a>(
         filter_chip(loc.t("settings.appearance"), state.settings_tab == SettingsTab::Appearance, UiMessage::SwitchSettingsTab(SettingsTab::Appearance), palette, metrics),
         filter_chip(loc.t("settings.general"), state.settings_tab == SettingsTab::General, UiMessage::SwitchSettingsTab(SettingsTab::General), palette, metrics),
         filter_chip(loc.t("settings.privacy"), state.settings_tab == SettingsTab::Privacy, UiMessage::SwitchSettingsTab(SettingsTab::Privacy), palette, metrics),
+        filter_chip(loc.t("settings.google_api"), state.settings_tab == SettingsTab::GoogleApi, UiMessage::SwitchSettingsTab(SettingsTab::GoogleApi), palette, metrics),
         filter_chip(loc.t("settings.updates"), state.settings_tab == SettingsTab::Updates, UiMessage::SwitchSettingsTab(SettingsTab::Updates), palette, metrics),
         Space::with_width(Length::Fill),
         button(text(loc.t("settings.save")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
@@ -1900,6 +1923,9 @@ fn render_settings_view<'a>(
                 .style(move |_| palette.card_container_style(metrics.radius_md)),
             );
         }
+        SettingsTab::GoogleApi => {
+            col = col.push(render_google_api_settings(state, loc, palette, metrics));
+        }
         SettingsTab::Updates => {
             col = col.push(
                 container(
@@ -2012,6 +2038,259 @@ fn render_diagnostics_view<'a>(
     col.into()
 }
 
+fn mask_display(val: &str) -> String {
+    let t = val.trim();
+    if t.is_empty() {
+        return "Not configured".to_string();
+    }
+    let chars: Vec<char> = t.chars().collect();
+    if chars.len() <= 12 {
+        "Configured (hidden)".to_string()
+    } else {
+        let head: String = chars[..6].iter().collect();
+        let tail: String = chars[chars.len() - 6..].iter().collect();
+        format!("{}...{}", head, tail)
+    }
+}
+
+fn render_google_api_settings<'a>(
+    state: &'a UiState,
+    loc: &'a LocalizationManager,
+    palette: ThemePalette,
+    metrics: LayoutMetrics,
+) -> Element<'a, UiMessage> {
+    let oauth_configured = !state.cred_client_id.trim().is_empty();
+    let api_key_configured = !state.cred_api_key.trim().is_empty();
+    let quota_text = state
+        .quota_general
+        .as_ref()
+        .map(|q| format!("{} / {} units", q.used_today, q.daily_limit))
+        .unwrap_or_else(|| "0 / 10000 units".to_string());
+
+    let top_tiles = row![
+        stat_tile(
+            "OAuth 2.0 Config",
+            if oauth_configured {
+                mask_display(&state.cred_client_id)
+            } else {
+                "Not configured".to_string()
+            },
+            palette,
+            metrics,
+        ),
+        stat_tile(
+            loc.t("auth.session_status"),
+            state.auth_session_status.clone(),
+            palette,
+            metrics,
+        ),
+        stat_tile(
+            loc.t("auth.api_status"),
+            state.api_connection_status.clone(),
+            palette,
+            metrics,
+        ),
+        stat_tile("Daily Quota", quota_text, palette, metrics),
+    ]
+    .spacing(metrics.space_md);
+
+    let channel_summary = if let Some(ref ch) = state.active_user_channel {
+        format!(
+            "{}  ({})  •  {} subscribers  •  {} videos",
+            ch.title,
+            ch.custom_url.clone().unwrap_or_else(|| ch.id.clone()),
+            ch.formatted_subscriber_count(),
+            ch.video_count
+        )
+    } else if state.active_account.is_some() {
+        "No linked YouTube channel fetched yet (or account has no YouTube channel)".to_string()
+    } else {
+        "Guest mode — sign in to inspect your personal YouTube channel".to_string()
+    };
+
+    let mut diag_col = column![
+        text(loc.t("auth.your_channel"))
+            .font(FONT_UI_SEMIBOLD)
+            .size(metrics.font_body),
+        text(channel_summary)
+            .size(metrics.font_caption)
+            .color(palette.text_secondary),
+        text(format!(
+            "{}: {}",
+            loc.t("auth.last_refresh"),
+            state
+                .auth_last_refresh_at
+                .clone()
+                .unwrap_or_else(|| "Not refreshed in this session".to_string())
+        ))
+        .size(metrics.font_caption)
+        .color(palette.text_secondary),
+        text(format!(
+            "Guest Public API Key: {}   |   Token Storage: {}",
+            if api_key_configured {
+                mask_display(&state.cred_api_key)
+            } else {
+                "Not set (Demo / OAuth-only)".to_string()
+            },
+            if cfg!(target_os = "macos") {
+                "macOS Keychain (refresh token) + RAM (access token)"
+            } else {
+                "Windows Credential Manager (refresh token) + RAM (access token)"
+            }
+        ))
+        .size(metrics.font_caption)
+        .color(palette.text_secondary),
+        text(format!(
+            "Feature Availability: Public search/watch = {}  |  Personal feeds/comments/likes/playlists = {}",
+            if api_key_configured || state.active_account.is_some() {
+                "Available"
+            } else {
+                "Offline Demo"
+            },
+            if state.active_account.is_some() && !state.auth_reauth_required {
+                "Authorized"
+            } else {
+                "Requires Google Sign-In"
+            }
+        ))
+        .size(metrics.font_caption)
+        .color(palette.text_secondary),
+    ]
+    .spacing(6);
+
+    if !state.auth_granted_scopes.is_empty() {
+        diag_col = diag_col.push(
+            text(format!(
+                "{}: {}",
+                loc.t("auth.granted_scopes"),
+                state.auth_granted_scopes.join(", ")
+            ))
+            .size(metrics.font_micro)
+            .color(palette.text_muted),
+        );
+    }
+
+    if let Some(ref api_err) = state.last_api_error {
+        diag_col = diag_col.push(
+            text(format!("Last API Error: {}", api_err))
+                .size(metrics.font_caption)
+                .color(palette.danger),
+        );
+    }
+
+    if let Some(ref auth_err) = state.auth_last_error {
+        diag_col = diag_col.push(
+            text(format!("Last Auth Error: {}", auth_err))
+                .size(metrics.font_caption)
+                .color(palette.danger),
+        );
+    }
+
+    let mut auth_actions = row![
+        button(text(loc.t("auth.import_json")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
+            .on_press(UiMessage::ImportOAuthJson)
+            .padding([8, 14])
+            .style(primary_button_style(palette, metrics.radius_sm)),
+        button(text(loc.t("auth.test_connection")).size(metrics.font_caption))
+            .on_press(UiMessage::TestGoogleApiConnection)
+            .padding([8, 14])
+            .style(secondary_button_style(palette, metrics.radius_sm)),
+    ]
+    .spacing(8)
+    .align_y(Alignment::Center);
+
+    if state.pkce_auth_loading {
+        auth_actions = auth_actions.push(
+            button(text(loc.t("auth.cancel_login")).size(metrics.font_caption))
+                .on_press(UiMessage::CancelGoogleSignIn)
+                .padding([8, 14])
+                .style(secondary_button_style(palette, metrics.radius_sm)),
+        );
+    } else if state.auth_reauth_required {
+        auth_actions = auth_actions.push(
+            button(text(loc.t("auth.retry_login")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
+                .on_press(UiMessage::StartGoogleSignIn)
+                .padding([8, 14])
+                .style(primary_button_style(palette, metrics.radius_sm)),
+        );
+    } else {
+        auth_actions = auth_actions.push(
+            button(text(loc.t("auth.login")).size(metrics.font_caption))
+                .on_press(UiMessage::ToggleAccountModal(true))
+                .padding([8, 14])
+                .style(secondary_button_style(palette, metrics.radius_sm)),
+        );
+    }
+
+    if let Some(ref acc) = state.active_account {
+        auth_actions = auth_actions.push(
+            button(text(loc.t("auth.revoke_access")).size(metrics.font_caption))
+                .on_press(UiMessage::RevokeGoogleAccess(acc.id.clone()))
+                .padding([8, 14])
+                .style(secondary_button_style(palette, metrics.radius_sm)),
+        );
+    }
+
+    let creds_editor = container(
+        column![
+            text(loc.t("auth.credentials_title"))
+                .font(FONT_UI_SEMIBOLD)
+                .size(metrics.font_body),
+            text(format!(
+                "Desktop OAuth Project: {}  |  Redirect policy: http://127.0.0.1:<random_port>/callback (PKCE S256)",
+                state
+                    .cred_project_id
+                    .clone()
+                    .unwrap_or_else(|| "Manual / .env / Imported JSON".to_string())
+            ))
+            .size(metrics.font_micro)
+            .color(palette.text_muted),
+            text_input("GOOGLE_CLIENT_ID (...apps.googleusercontent.com)", &state.cred_client_id)
+                .on_input(UiMessage::CredClientIdChanged)
+                .padding([7, 10])
+                .size(metrics.font_caption)
+                .style(input_style(palette, metrics.radius_sm)),
+            text_input("Optional Client Secret (hidden; Desktop clients use PKCE)", &state.cred_client_secret)
+                .on_input(UiMessage::CredClientSecretChanged)
+                .secure(true)
+                .padding([7, 10])
+                .size(metrics.font_caption)
+                .style(input_style(palette, metrics.radius_sm)),
+            text_input("YOUTUBE_API_KEY (for Guest public data)", &state.cred_api_key)
+                .on_input(UiMessage::CredApiKeyChanged)
+                .padding([7, 10])
+                .size(metrics.font_caption)
+                .style(input_style(palette, metrics.radius_sm)),
+            row![
+                button(text(loc.t("auth.save_credentials")).font(FONT_UI_SEMIBOLD).size(metrics.font_caption))
+                    .on_press(UiMessage::SaveGoogleCredentials)
+                    .padding([7, 14])
+                    .style(primary_button_style(palette, metrics.radius_sm)),
+                button(text(loc.t("auth.clear_credentials")).size(metrics.font_caption))
+                    .on_press(UiMessage::ClearGoogleCredentials)
+                    .padding([7, 14])
+                    .style(secondary_button_style(palette, metrics.radius_sm)),
+            ]
+            .spacing(8),
+        ]
+        .spacing(8),
+    )
+    .padding(16)
+    .width(Length::Fill)
+    .style(move |_| palette.card_container_style(metrics.radius_md));
+
+    column![
+        top_tiles,
+        container(column![diag_col, auth_actions].spacing(12))
+            .padding(16)
+            .width(Length::Fill)
+            .style(move |_| palette.card_container_style(metrics.radius_md)),
+        creds_editor,
+    ]
+    .spacing(metrics.space_md)
+    .into()
+}
+
 fn render_account_modal<'a>(
     state: &'a UiState,
     loc: &'a LocalizationManager,
@@ -2023,25 +2302,30 @@ fn render_account_modal<'a>(
             .font(FONT_UI_BOLD)
             .size(metrics.font_title)
             .width(Length::Fill),
+        button(text(loc.t("auth.import_json")).size(metrics.font_micro))
+            .on_press(UiMessage::ImportOAuthJson)
+            .padding([5, 10])
+            .style(secondary_button_style(palette, 999.0)),
         button(text("✕").size(metrics.font_body))
             .on_press(UiMessage::ToggleAccountModal(false))
             .padding([4, 10])
             .style(ghost_button_style(palette, metrics.radius_sm, false)),
     ]
+    .spacing(6)
     .align_y(Alignment::Center);
 
     let auth_tabs = row![
         filter_chip(
-            loc.t("auth.device_tab"),
-            state.auth_tab == AuthTab::DeviceCode,
-            UiMessage::SwitchAuthTab(AuthTab::DeviceCode),
+            loc.t("auth.pkce_tab"),
+            state.auth_tab == AuthTab::BrowserPkce,
+            UiMessage::SwitchAuthTab(AuthTab::BrowserPkce),
             palette,
             metrics,
         ),
         filter_chip(
-            loc.t("auth.pkce_tab"),
-            state.auth_tab == AuthTab::BrowserPkce,
-            UiMessage::SwitchAuthTab(AuthTab::BrowserPkce),
+            loc.t("auth.device_tab"),
+            state.auth_tab == AuthTab::DeviceCode,
+            UiMessage::SwitchAuthTab(AuthTab::DeviceCode),
             palette,
             metrics,
         ),
@@ -2055,6 +2339,63 @@ fn render_account_modal<'a>(
     .align_y(Alignment::Center);
 
     let auth_panel: Element<'a, UiMessage> = match state.auth_tab {
+        AuthTab::BrowserPkce => {
+            let mut pkce_col = column![
+                text(loc.t("auth.oauth_note"))
+                    .size(metrics.font_caption)
+                    .color(palette.text_secondary),
+            ]
+            .spacing(10);
+
+            if let Some(ref err_msg) = state.auth_last_error {
+                pkce_col = pkce_col.push(
+                    text(err_msg)
+                        .size(metrics.font_caption)
+                        .color(palette.danger),
+                );
+            }
+
+            if state.pkce_auth_loading {
+                pkce_col = pkce_col.push(
+                    row![
+                        text(loc.t("auth.waiting_approval"))
+                            .font(FONT_UI_SEMIBOLD)
+                            .size(metrics.font_caption)
+                            .color(palette.accent)
+                            .width(Length::Fill),
+                        button(text(loc.t("auth.cancel_login")).size(metrics.font_caption))
+                            .on_press(UiMessage::CancelGoogleSignIn)
+                            .padding([8, 14])
+                            .style(secondary_button_style(palette, metrics.radius_sm)),
+                    ]
+                    .spacing(8)
+                    .align_y(Alignment::Center),
+                );
+            } else {
+                let btn_label = if state.auth_reauth_required {
+                    loc.t("auth.retry_login")
+                } else {
+                    format!("+ {}", loc.t("auth.login"))
+                };
+                pkce_col = pkce_col.push(
+                    button(
+                        text(btn_label)
+                            .font(FONT_UI_SEMIBOLD)
+                            .size(metrics.font_body),
+                    )
+                    .on_press(UiMessage::StartGoogleSignIn)
+                    .width(Length::Fill)
+                    .padding(10)
+                    .style(primary_button_style(palette, metrics.radius_sm)),
+                );
+            }
+
+            container(pkce_col)
+                .padding(16)
+                .width(Length::Fill)
+                .style(move |_| palette.card_container_style(metrics.radius_md))
+                .into()
+        }
         AuthTab::DeviceCode => {
             if let Some(ref dev) = state.device_auth {
                 container(
@@ -2133,34 +2474,67 @@ fn render_account_modal<'a>(
                 .into()
             }
         }
-        AuthTab::BrowserPkce => container(
-            column![
-                text(loc.t("auth.oauth_note"))
-                    .size(metrics.font_caption)
-                    .color(palette.text_secondary),
-                button(
-                    text(format!("+ {}", loc.t("auth.login")))
-                        .font(FONT_UI_SEMIBOLD)
-                        .size(metrics.font_body)
-                )
-                .on_press(UiMessage::StartGoogleSignIn)
-                .width(Length::Fill)
-                .padding(10)
-                .style(primary_button_style(palette, metrics.radius_sm)),
-            ]
-            .spacing(12),
-        )
-        .padding(16)
-        .width(Length::Fill)
-        .style(move |_| palette.card_container_style(metrics.radius_md))
-        .into(),
     };
 
     let mut modal_col = Column::new()
         .spacing(metrics.space_md)
-        .push(header)
-        .push(auth_tabs)
-        .push(auth_panel);
+        .push(header);
+
+    if let Some(ref acc) = state.active_account {
+        let tint = deterministic_tint(&acc.name);
+        let ch_line = state
+            .active_user_channel
+            .as_ref()
+            .map(|c| {
+                format!(
+                    "Channel: {} ({} subscribers)",
+                    c.title,
+                    c.formatted_subscriber_count()
+                )
+            })
+            .unwrap_or_else(|| format!("Status: {}", state.auth_session_status));
+        let pic_widget: Element<'a, UiMessage> = match acc
+            .picture
+            .as_ref()
+            .and_then(|url| state.thumbnails.get(url))
+        {
+            Some(handle) => container(
+                image(handle.clone())
+                    .width(Length::Fixed(38.0))
+                    .height(Length::Fixed(38.0))
+                    .content_fit(iced::ContentFit::Cover),
+            )
+            .width(Length::Fixed(38.0))
+            .height(Length::Fixed(38.0))
+            .clip(true)
+            .into(),
+            None => avatar_circle(&acc.name, tint, 38.0).into(),
+        };
+        modal_col = modal_col.push(
+            container(
+                row![
+                    pic_widget,
+                    column![
+                        text(format!("{} ({})", acc.name, acc.email))
+                            .font(FONT_UI_SEMIBOLD)
+                            .size(metrics.font_body),
+                        text(ch_line)
+                            .size(metrics.font_micro)
+                            .color(palette.text_secondary),
+                    ]
+                    .spacing(2)
+                    .width(Length::Fill),
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center),
+            )
+            .padding(12)
+            .width(Length::Fill)
+            .style(move |_| palette.card_container_style(metrics.radius_md)),
+        );
+    }
+
+    modal_col = modal_col.push(auth_tabs).push(auth_panel);
 
     if state.show_credentials_form {
         modal_col = modal_col.push(
@@ -2174,25 +2548,32 @@ fn render_account_modal<'a>(
                         .padding([7, 10])
                         .size(metrics.font_caption)
                         .style(input_style(palette, metrics.radius_sm)),
-                    text_input("GOOGLE_CLIENT_SECRET (for TV/Device client)", &state.cred_client_secret)
+                    text_input("GOOGLE_CLIENT_SECRET (optional for Desktop PKCE)", &state.cred_client_secret)
                         .on_input(UiMessage::CredClientSecretChanged)
                         .secure(true)
                         .padding([7, 10])
                         .size(metrics.font_caption)
                         .style(input_style(palette, metrics.radius_sm)),
-                    text_input("YOUTUBE_API_KEY (optional for public data)", &state.cred_api_key)
+                    text_input("YOUTUBE_API_KEY (optional for guest public data)", &state.cred_api_key)
                         .on_input(UiMessage::CredApiKeyChanged)
                         .padding([7, 10])
                         .size(metrics.font_caption)
                         .style(input_style(palette, metrics.radius_sm)),
-                    button(
-                        text(loc.t("auth.save_credentials"))
-                            .font(FONT_UI_SEMIBOLD)
-                            .size(metrics.font_caption)
-                    )
-                    .on_press(UiMessage::SaveGoogleCredentials)
-                    .padding([7, 14])
-                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                    row![
+                        button(
+                            text(loc.t("auth.save_credentials"))
+                                .font(FONT_UI_SEMIBOLD)
+                                .size(metrics.font_caption)
+                        )
+                        .on_press(UiMessage::SaveGoogleCredentials)
+                        .padding([7, 14])
+                        .style(primary_button_style(palette, metrics.radius_sm)),
+                        button(text(loc.t("auth.import_json")).size(metrics.font_caption))
+                            .on_press(UiMessage::ImportOAuthJson)
+                            .padding([7, 14])
+                            .style(secondary_button_style(palette, metrics.radius_sm)),
+                    ]
+                    .spacing(8),
                 ]
                 .spacing(8),
             )
@@ -2226,19 +2607,24 @@ fn render_account_modal<'a>(
                 .width(Length::Fill)
                 .padding(8)
                 .style(secondary_button_style(palette, metrics.radius_sm)),
-                button(text(loc.t("auth.logout")).size(metrics.font_caption))
+                button(text(loc.t("auth.logout")).size(metrics.font_micro))
                     .on_press(UiMessage::SignOutAccount(acc.id.clone()))
-                    .padding([8, 12])
+                    .padding([8, 10])
+                    .style(secondary_button_style(palette, metrics.radius_sm)),
+                button(text(loc.t("auth.revoke_access")).size(metrics.font_micro))
+                    .on_press(UiMessage::RevokeGoogleAccess(acc.id.clone()))
+                    .padding([8, 10])
                     .style(secondary_button_style(palette, metrics.radius_sm)),
             ]
-            .spacing(8)
+            .spacing(6)
             .align_y(Alignment::Center),
         );
     }
 
     container(
-        container(modal_col)
-            .width(Length::Fixed(540.0))
+        container(scrollable(modal_col).height(Length::Shrink))
+            .width(Length::Fixed(580.0))
+            .max_height(660.0)
             .padding(22)
             .style(move |_| panel_style(palette, palette.bg_elevated, metrics.radius_lg)),
     )

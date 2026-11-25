@@ -1,5 +1,8 @@
 use chrono::Utc;
-use fluxtube_auth::{AuthSession, DeviceCodeResponse, DevicePollOutcome, OAuthManager};
+use fluxtube_auth::{
+    default_google_scopes, AuthSession, DesktopOAuthConfig, DeviceCodeResponse, DevicePollOutcome,
+    OAuthManager,
+};
 use fluxtube_cache::{CacheConfig, ThumbnailCache};
 use fluxtube_core::{
     Bookmark, Channel, Comment, HistoryEntry, PerformanceProfileType, PerformanceSettings,
@@ -21,13 +24,14 @@ use fluxtube_storage::StorageManager;
 use fluxtube_ui::{extract_chapters, render_app, DeviceAuthState, Route, UiMessage, UiState};
 use fluxtube_updater::{UpdateChannel, UpdateCheckOutcome, UpdaterClient};
 use fluxtube_youtube_api::{
-    LiveYouTubeApiClient, MockYouTubeApiClient, SearchParams, YouTubeDataApi,
+    LiveYouTubeApiClient, MockYouTubeApiClient, SearchParams, YouTubeApiError, YouTubeDataApi,
 };
 use iced::keyboard::{self, Key};
 use iced::{window, Element, Subscription, Task};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
@@ -39,6 +43,9 @@ pub enum AppMessage {
     CommentPosted(Result<Comment, String>),
     ThumbnailLoaded(String, Result<iced::widget::image::Handle, String>),
     AuthCompleted(Result<AuthSession, String>),
+    OAuthJsonImported(Result<Option<DesktopOAuthConfig>, String>),
+    AccessRevoked(String, Result<(), String>),
+    ApiConnectionTested(Result<String, String>),
     DeviceCodeReceived(Result<DeviceCodeResponse, String>),
     DevicePollTick,
     DevicePollResult(Result<DevicePollOutcome, String>),
@@ -53,6 +60,10 @@ pub struct InitialFeedPayload {
     pub popular: Vec<Video>,
     pub subscriptions: Vec<Channel>,
     pub playlists: Vec<Playlist>,
+    pub user_channel: Option<Channel>,
+    pub reauth_required: Option<String>,
+    pub last_refresh_at: Option<String>,
+    pub granted_scopes: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -87,15 +98,17 @@ pub struct FluxTubeApp {
     pub paths: AppPaths,
     pub search_generation: u64,
     device_poll_in_flight: bool,
+    pkce_cancel: Option<CancellationToken>,
 }
 
 fn build_api_client(
     http: &ResilientHttpClient,
     quota: &Arc<QuotaTracker>,
     api_key: &str,
+    has_active_account: bool,
     force_mock: bool,
 ) -> (Arc<dyn YouTubeDataApi>, bool) {
-    let is_mock_mode = force_mock || api_key.trim().is_empty();
+    let is_mock_mode = force_mock || (api_key.trim().is_empty() && !has_active_account);
     let api: Arc<dyn YouTubeDataApi> = if is_mock_mode {
         Arc::new(MockYouTubeApiClient::new())
     } else {
@@ -121,12 +134,7 @@ fn build_oauth_manager(
         http.client().clone(),
         client_id.trim().to_string(),
         client_secret.filter(|s| !s.trim().is_empty()),
-        vec![
-            "openid".to_string(),
-            "profile".to_string(),
-            "email".to_string(),
-            "https://www.googleapis.com/auth/youtube.readonly".to_string(),
-        ],
+        default_google_scopes(),
     ))
 }
 
@@ -177,6 +185,7 @@ impl FluxTubeApp {
             .build()
             .map_err(|e| e.to_string())?;
 
+        let initial_account = storage.get_active_account().unwrap_or(None);
         let api_key = storage
             .get_setting("config:youtube_api_key")
             .ok()
@@ -186,7 +195,8 @@ impl FluxTubeApp {
         let force_mock = std::env::var("FLUXTUBE_OFFLINE_MOCK")
             .map(|v| v == "true" || v == "1")
             .unwrap_or(false);
-        let (api, is_mock_mode) = build_api_client(&http, &quota, &api_key, force_mock);
+        let (api, is_mock_mode) =
+            build_api_client(&http, &quota, &api_key, initial_account.is_some(), force_mock);
 
         let client_id = storage
             .get_setting("config:google_client_id")
@@ -194,6 +204,11 @@ impl FluxTubeApp {
             .flatten()
             .filter(|s| !s.trim().is_empty())
             .unwrap_or_else(|| std::env::var("GOOGLE_CLIENT_ID").unwrap_or_default());
+        let project_id = storage
+            .get_setting("config:google_project_id")
+            .ok()
+            .flatten()
+            .filter(|s| !s.trim().is_empty());
         let client_secret = vault
             .get_token("config:google_client_secret")
             .ok()
@@ -229,9 +244,21 @@ impl FluxTubeApp {
         ui.cred_api_key = api_key;
         ui.cred_client_id = client_id;
         ui.cred_client_secret = client_secret.unwrap_or_default();
+        ui.cred_project_id = project_id;
 
         ui.accounts = storage.get_all_accounts().unwrap_or_default();
-        ui.active_account = storage.get_active_account().unwrap_or(None);
+        ui.active_account = initial_account;
+        if let Some(ref acc) = ui.active_account {
+            ui.auth_session_status = if is_mock_mode {
+                "Signed In (Offline Demo)".to_string()
+            } else {
+                "Restoring Google session...".to_string()
+            };
+            ui.auth_granted_scopes = auth.granted_scopes_for(&acc.id);
+            if let Ok(Some(ch_json)) = storage.get_setting(&format!("channel_info:{}", acc.id)) {
+                ui.active_user_channel = serde_json::from_str(&ch_json).ok();
+            }
+        }
         let acc_id = ui.active_account.as_ref().map(|a| a.id.clone());
         ui.history = storage.get_history(acc_id.as_deref(), 50).unwrap_or_default();
         ui.continue_watching = ui
@@ -275,38 +302,145 @@ impl FluxTubeApp {
             paths,
             search_generation: 0,
             device_poll_in_flight: false,
+            pkce_cancel: None,
         };
 
-        let init_task = app.load_initial_feed_task();
+        let init_task = if in_memory {
+            Task::none()
+        } else {
+            app.load_initial_feed_task()
+        };
         Ok((app, init_task))
     }
 
     fn load_initial_feed_task(&self) -> Task<AppMessage> {
         let api = self.api.clone();
+        let auth = self.auth.clone();
+        let is_mock = self.ui.is_mock_mode;
+        let active_acc_id = self.ui.active_account.as_ref().map(|a| a.id.clone());
+        let has_api_key = !self.ui.cred_api_key.trim().is_empty();
+
         Task::perform(
             async move {
-                let popular = api
-                    .get_popular_videos("US", None, None, 20)
-                    .await
-                    .map(|p| p.items)
-                    .map_err(|e| e.to_string())?;
-                let subscriptions = api
-                    .get_user_subscriptions("", None)
-                    .await
-                    .map(|p| p.items)
-                    .unwrap_or_default();
-                let playlists = api
-                    .get_user_playlists("", None)
-                    .await
-                    .map(|p| p.items)
-                    .unwrap_or_default();
+                let mut reauth_required = None;
+                let mut token_opt: Option<String> = None;
+
+                if let Some(ref acc_id) = active_acc_id {
+                    if !is_mock {
+                        match auth.validate_and_restore_session(acc_id).await {
+                            Ok(tok) => token_opt = Some(tok),
+                            Err(e) => reauth_required = Some(e.to_string()),
+                        }
+                    } else {
+                        token_opt = Some(String::new());
+                    }
+                }
+
+                let popular = if has_api_key || is_mock {
+                    api.get_popular_videos("US", None, None, 20)
+                        .await
+                        .map(|p| p.items)
+                        .map_err(|e| e.to_string())?
+                } else {
+                    Vec::new()
+                };
+
+                let mut user_channel = None;
+                let mut subscriptions = Vec::new();
+                let mut playlists = Vec::new();
+
+                if let Some(mut tok) = token_opt {
+                    // Single HTTP 401 retry if Google rejected an apparently-fresh token
+                    let mut ch_res = api.get_my_channel(&tok).await;
+                    if matches!(ch_res, Err(YouTubeApiError::Unauthorized(_))) {
+                        if let Some(ref acc_id) = active_acc_id {
+                            match auth.handle_unauthorized(acc_id).await {
+                                Ok(new_tok) => {
+                                    tok = new_tok;
+                                    ch_res = api.get_my_channel(&tok).await;
+                                }
+                                Err(e) => {
+                                    reauth_required = Some(e.to_string());
+                                }
+                            }
+                        }
+                    }
+
+                    match ch_res {
+                        Ok(ch) => user_channel = Some(ch),
+                        Err(YouTubeApiError::Unauthorized(msg)) => {
+                            reauth_required = Some(format!("Session unauthorized: {}", msg));
+                        }
+                        Err(_) => {}
+                    }
+
+                    if reauth_required.is_none() {
+                        subscriptions = api
+                            .get_user_subscriptions(&tok, None)
+                            .await
+                            .map(|p| p.items)
+                            .unwrap_or_default();
+                        playlists = api
+                            .get_user_playlists(&tok, None)
+                            .await
+                            .map(|p| p.items)
+                            .unwrap_or_default();
+                    }
+                }
+
+                let (last_refresh_at, granted_scopes) = if let Some(ref acc_id) = active_acc_id {
+                    (
+                        auth.coordinator()
+                            .last_refresh_at(acc_id)
+                            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S UTC").to_string()),
+                        auth.granted_scopes_for(acc_id),
+                    )
+                } else {
+                    (None, Vec::new())
+                };
+
                 Ok(InitialFeedPayload {
                     popular,
                     subscriptions,
                     playlists,
+                    user_channel,
+                    reauth_required,
+                    last_refresh_at,
+                    granted_scopes,
                 })
             },
             AppMessage::InitialFeedLoaded,
+        )
+    }
+
+    fn prefetch_user_avatar(&self) -> Task<AppMessage> {
+        let Some(ref acc) = self.ui.active_account else {
+            return Task::none();
+        };
+        let Some(ref pic_url) = acc.picture else {
+            return Task::none();
+        };
+        if pic_url.is_empty() || self.ui.thumbnails.contains_key(pic_url) {
+            return Task::none();
+        }
+        let url = pic_url.clone();
+        let cache = self.cache.clone();
+        Task::perform(
+            async move {
+                let res = cache
+                    .get_or_fetch(&url, None)
+                    .await
+                    .map(|img| {
+                        iced::widget::image::Handle::from_rgba(
+                            img.width,
+                            img.height,
+                            img.rgba.clone(),
+                        )
+                    })
+                    .map_err(|e| e.to_string());
+                (url, res)
+            },
+            |(u, r)| AppMessage::ThumbnailLoaded(u, r),
         )
     }
 
@@ -353,6 +487,41 @@ impl FluxTubeApp {
                 self.ui.live_videos = payload.popular.iter().filter(|v| v.is_live()).cloned().collect();
                 self.ui.subscriptions = payload.subscriptions;
                 self.ui.subscribed_ids = self.ui.subscriptions.iter().map(|c| c.id.clone()).collect();
+                self.ui.last_api_error = None;
+                self.ui.api_connection_status = if self.ui.is_mock_mode {
+                    "Offline Demo Mode".to_string()
+                } else {
+                    "Connected (YouTube Data API v3)".to_string()
+                };
+
+                if let Some(ch) = payload.user_channel {
+                    if let Some(ref acc) = self.ui.active_account {
+                        if let Ok(ch_json) = serde_json::to_string(&ch) {
+                            let _ = self.storage.set_setting(&format!("channel_info:{}", acc.id), &ch_json);
+                        }
+                    }
+                    self.ui.active_user_channel = Some(ch);
+                }
+
+                if let Some(reauth_err) = payload.reauth_required {
+                    self.ui.auth_reauth_required = true;
+                    self.ui.auth_last_error = Some(reauth_err);
+                    self.ui.auth_session_status = "Re-authorization Required".to_string();
+                } else if self.ui.active_account.is_some() {
+                    self.ui.auth_reauth_required = false;
+                    self.ui.auth_last_error = None;
+                    self.ui.auth_session_status = "Authenticated (Google OAuth)".to_string();
+                } else {
+                    self.ui.auth_reauth_required = false;
+                    self.ui.auth_session_status = "Guest Mode".to_string();
+                }
+
+                if payload.last_refresh_at.is_some() {
+                    self.ui.auth_last_refresh_at = payload.last_refresh_at;
+                }
+                if !payload.granted_scopes.is_empty() {
+                    self.ui.auth_granted_scopes = payload.granted_scopes;
+                }
 
                 for pl in payload.playlists {
                     if !self.ui.playlists.iter().any(|existing| existing.id == pl.id) {
@@ -361,9 +530,14 @@ impl FluxTubeApp {
                 }
                 self.ui.quota_general = Some(self.quota.get_status(QuotaPool::General));
                 self.ui.quota_search = Some(self.quota.get_status(QuotaPool::Search));
-                self.prefetch_thumbnails(&self.ui.home_videos)
+                Task::batch([
+                    self.prefetch_thumbnails(&self.ui.home_videos),
+                    self.prefetch_user_avatar(),
+                ])
             }
             AppMessage::InitialFeedLoaded(Err(e)) => {
+                self.ui.last_api_error = Some(e.clone());
+                self.ui.api_connection_status = "API Error".to_string();
                 self.ui.error_banner = Some(e);
                 Task::none()
             }
@@ -459,18 +633,124 @@ impl FluxTubeApp {
             }
             AppMessage::ThumbnailLoaded(_, Err(_)) => Task::none(),
             AppMessage::AuthCompleted(Ok(session)) => {
+                self.pkce_cancel = None;
+                self.ui.pkce_auth_loading = false;
                 self.ui.active_account = Some(session.profile);
                 self.ui.accounts = self.storage.get_all_accounts().unwrap_or_default();
                 self.ui.show_account_modal = false;
                 self.ui.device_auth = None;
                 self.ui.device_auth_loading = false;
                 self.device_poll_in_flight = false;
+                self.ui.auth_reauth_required = false;
+                self.ui.auth_last_error = None;
+                self.ui.auth_session_status = "Authenticated (Google OAuth)".to_string();
+                self.ui.auth_last_refresh_at =
+                    Some(Utc::now().format("%Y-%m-%d %H:%M:%S UTC").to_string());
+                self.ui.auth_granted_scopes = session.granted_scopes;
+
+                let force_mock = std::env::var("FLUXTUBE_OFFLINE_MOCK")
+                    .map(|v| v == "true" || v == "1")
+                    .unwrap_or(false);
+                let (api, is_mock) = build_api_client(
+                    &self.http,
+                    &self.quota,
+                    &self.ui.cred_api_key,
+                    true,
+                    force_mock,
+                );
+                self.api = api;
+                self.ui.is_mock_mode = is_mock;
+
+                // Reload isolated account history & local playlists for the newly signed-in account
+                let acc_id = self.ui.active_account.as_ref().map(|a| a.id.clone());
+                self.ui.history = self.storage.get_history(acc_id.as_deref(), 50).unwrap_or_default();
+                self.ui.continue_watching = self
+                    .ui
+                    .history
+                    .iter()
+                    .filter(|h| h.is_resumable())
+                    .cloned()
+                    .collect();
+                self.ui.playlists = self.storage.get_playlists(acc_id.as_deref()).unwrap_or_default();
+
                 self.ui.toast = Some(("Signed in with Google".to_string(), false));
                 self.load_initial_feed_task()
             }
             AppMessage::AuthCompleted(Err(e)) => {
+                self.pkce_cancel = None;
+                self.ui.pkce_auth_loading = false;
                 self.ui.device_auth_loading = false;
+                self.ui.auth_last_error = Some(e.clone());
                 self.ui.toast = Some((format!("Auth failed: {}", e), true));
+                Task::none()
+            }
+            AppMessage::OAuthJsonImported(Ok(Some(cfg))) => {
+                let _ = self.storage.set_setting("config:google_client_id", &cfg.client_id);
+                if let Some(ref pid) = cfg.project_id {
+                    let _ = self.storage.set_setting("config:google_project_id", pid);
+                }
+                if let Some(secret) = cfg.client_secret_exposed() {
+                    let _ = self.vault.store_token("config:google_client_secret", secret);
+                    self.ui.cred_client_secret = secret.to_string();
+                } else {
+                    let _ = self.vault.delete_token("config:google_client_secret");
+                    self.ui.cred_client_secret.clear();
+                }
+
+                self.ui.cred_client_id = cfg.client_id.clone();
+                self.ui.cred_project_id = cfg.project_id.clone();
+                self.auth = Arc::new(OAuthManager::from_desktop_config(
+                    self.vault.clone(),
+                    self.storage.clone(),
+                    self.http.client().clone(),
+                    &cfg,
+                    default_google_scopes(),
+                ));
+                self.ui.auth_last_error = None;
+                self.ui.toast = Some((
+                    format!("Imported Desktop OAuth JSON ({})", cfg.masked_client_id()),
+                    false,
+                ));
+                Task::none()
+            }
+            AppMessage::OAuthJsonImported(Ok(None)) => Task::none(),
+            AppMessage::OAuthJsonImported(Err(e)) => {
+                self.ui.auth_last_error = Some(e.clone());
+                self.ui.toast = Some((e, true));
+                Task::none()
+            }
+            AppMessage::AccessRevoked(acc_id, Ok(())) => {
+                if self.ui.active_account.as_ref().map(|a| &a.id) == Some(&acc_id) {
+                    self.ui.active_user_channel = None;
+                    self.ui.subscriptions.clear();
+                    self.ui.subscribed_ids.clear();
+                    self.ui.auth_granted_scopes.clear();
+                    self.ui.auth_last_refresh_at = None;
+                    self.ui.auth_reauth_required = false;
+                    self.ui.auth_session_status = "Guest Mode".to_string();
+                }
+                self.ui.accounts = self.storage.get_all_accounts().unwrap_or_default();
+                self.ui.active_account = self.storage.get_active_account().unwrap_or(None);
+                self.ui.toast = Some(("Google OAuth access revoked and signed out".to_string(), false));
+                self.load_initial_feed_task()
+            }
+            AppMessage::AccessRevoked(_acc_id, Err(e)) => {
+                self.ui.auth_last_error = Some(e.clone());
+                self.ui.toast = Some((format!("Revoke failed: {}", e), true));
+                Task::none()
+            }
+            AppMessage::ApiConnectionTested(Ok(summary)) => {
+                self.ui.api_connection_status = "Healthy".to_string();
+                self.ui.last_api_error = None;
+                self.ui.quota_general = Some(self.quota.get_status(QuotaPool::General));
+                self.ui.quota_search = Some(self.quota.get_status(QuotaPool::Search));
+                self.ui.toast = Some((summary, false));
+                Task::none()
+            }
+            AppMessage::ApiConnectionTested(Err(e)) => {
+                self.ui.api_connection_status = "Error".to_string();
+                self.ui.last_api_error = Some(e.clone());
+                self.ui.toast = Some((e, true));
                 Task::none()
             }
             AppMessage::DeviceCodeReceived(Ok(resp)) => {
@@ -883,16 +1163,33 @@ impl FluxTubeApp {
                 } else {
                     rating
                 };
-                self.ui.current_video_rating = next;
                 if let Some(ref v) = self.ui.current_video {
+                    if !self.ui.is_mock_mode && self.ui.active_account.is_none() {
+                        self.ui.toast = Some(("Google sign-in required to rate videos".to_string(), true));
+                        return Task::none();
+                    }
+                    self.ui.current_video_rating = next;
                     if next == VideoRating::Like && !self.ui.liked_videos.iter().any(|x| x.id == v.id) {
                         self.ui.liked_videos.insert(0, v.clone());
                     }
                     let vid_id = v.id.clone();
                     let api = self.api.clone();
+                    let auth = self.auth.clone();
+                    let is_mock = self.ui.is_mock_mode;
                     return Task::perform(
                         async move {
-                            let _ = api.rate_video("", &vid_id, next).await;
+                            if is_mock {
+                                let _ = api.rate_video("", &vid_id, next).await;
+                            } else if let Ok(Some(tok)) = auth.get_active_access_token().await {
+                                let res = api.rate_video(&tok, &vid_id, next).await;
+                                if matches!(res, Err(YouTubeApiError::Unauthorized(_))) {
+                                    if let Ok(Some(acc)) = auth.get_active_account() {
+                                        if let Ok(new_tok) = auth.handle_unauthorized(&acc.id).await {
+                                            let _ = api.rate_video(&new_tok, &vid_id, next).await;
+                                        }
+                                    }
+                                }
+                            }
                         },
                         |_| AppMessage::Ui(UiMessage::RefreshDiagnostics),
                     );
@@ -1014,7 +1311,12 @@ impl FluxTubeApp {
                 Task::none()
             }
             UiMessage::ToggleChannelSubscribe(cid) => {
-                if self.ui.subscribed_ids.contains(&cid) {
+                let currently_sub = self.ui.subscribed_ids.contains(&cid);
+                if !self.ui.is_mock_mode && self.ui.active_account.is_none() {
+                    self.ui.toast = Some(("Google sign-in required to manage subscriptions".to_string(), true));
+                    return Task::none();
+                }
+                if currently_sub {
                     self.ui.subscribed_ids.remove(&cid);
                     self.ui.subscriptions.retain(|c| c.id != cid);
                 } else {
@@ -1024,6 +1326,26 @@ impl FluxTubeApp {
                             self.ui.subscriptions.push(ch.clone());
                         }
                     }
+                    let api = self.api.clone();
+                    let auth = self.auth.clone();
+                    let is_mock = self.ui.is_mock_mode;
+                    return Task::perform(
+                        async move {
+                            if is_mock {
+                                let _ = api.subscribe("", &cid).await;
+                            } else if let Ok(Some(tok)) = auth.get_active_access_token().await {
+                                let res = api.subscribe(&tok, &cid).await;
+                                if matches!(res, Err(YouTubeApiError::Unauthorized(_))) {
+                                    if let Ok(Some(acc)) = auth.get_active_account() {
+                                        if let Ok(new_tok) = auth.handle_unauthorized(&acc.id).await {
+                                            let _ = api.subscribe(&new_tok, &cid).await;
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        |_| AppMessage::Ui(UiMessage::RefreshDiagnostics),
+                    );
                 }
                 Task::none()
             }
@@ -1307,7 +1629,13 @@ impl FluxTubeApp {
                 let force_mock = std::env::var("FLUXTUBE_OFFLINE_MOCK")
                     .map(|v| v == "true" || v == "1")
                     .unwrap_or(false);
-                let (api, is_mock) = build_api_client(&self.http, &self.quota, &api_key, force_mock);
+                let (api, is_mock) = build_api_client(
+                    &self.http,
+                    &self.quota,
+                    &api_key,
+                    self.ui.active_account.is_some(),
+                    force_mock,
+                );
                 let secret_opt = if secret.is_empty() { None } else { Some(secret) };
                 self.auth = build_oauth_manager(
                     &self.vault,
@@ -1324,33 +1652,193 @@ impl FluxTubeApp {
                 self.ui.toast = Some(("Google API credentials saved".to_string(), false));
                 self.load_initial_feed_task()
             }
+            UiMessage::ClearGoogleCredentials => {
+                self.ui.cred_client_id.clear();
+                self.ui.cred_client_secret.clear();
+                self.ui.cred_api_key.clear();
+                self.ui.cred_project_id = None;
+                let _ = self.storage.set_setting("config:google_client_id", "");
+                let _ = self.storage.set_setting("config:youtube_api_key", "");
+                let _ = self.storage.set_setting("config:google_project_id", "");
+                let _ = self.vault.delete_token("config:google_client_secret");
+                let force_mock = std::env::var("FLUXTUBE_OFFLINE_MOCK")
+                    .map(|v| v == "true" || v == "1")
+                    .unwrap_or(false);
+                let (api, is_mock) = build_api_client(
+                    &self.http,
+                    &self.quota,
+                    "",
+                    self.ui.active_account.is_some(),
+                    force_mock,
+                );
+                self.api = api;
+                self.ui.is_mock_mode = is_mock;
+                self.auth = build_oauth_manager(&self.vault, &self.storage, &self.http, "", None);
+                self.ui.toast = Some(("Google API credentials cleared".to_string(), false));
+                self.load_initial_feed_task()
+            }
+            UiMessage::ImportOAuthJson => {
+                Task::perform(
+                    async move {
+                        let picked = rfd::AsyncFileDialog::new()
+                            .add_filter("Google OAuth JSON", &["json"])
+                            .set_title("Import Google Cloud Desktop OAuth JSON")
+                            .pick_file()
+                            .await;
+                        let Some(file) = picked else {
+                            return Ok(None);
+                        };
+                        let bytes = file.read().await;
+                        let content = String::from_utf8(bytes)
+                            .map_err(|e| format!("Invalid UTF-8 in JSON file: {}", e))?;
+                        let cfg = DesktopOAuthConfig::from_google_json_str(&content)
+                            .map_err(|e| e.to_string())?;
+                        Ok(Some(cfg))
+                    },
+                    AppMessage::OAuthJsonImported,
+                )
+            }
+            UiMessage::TestGoogleApiConnection => {
+                let api = self.api.clone();
+                let auth = self.auth.clone();
+                let is_mock = self.ui.is_mock_mode;
+                let has_account = self.ui.active_account.is_some();
+                Task::perform(
+                    async move {
+                        if is_mock {
+                            return Ok("Offline Demo Mode active (configure API Key or OAuth JSON for live test)".to_string());
+                        }
+                        if has_account {
+                            let tok = auth
+                                .get_active_access_token()
+                                .await
+                                .map_err(|e| e.to_string())?
+                                .ok_or_else(|| "No active access token".to_string())?;
+                            let ch = api.get_my_channel(&tok).await.map_err(|e| e.to_string())?;
+                            return Ok(format!("OAuth + YouTube API OK: connected to channel '{}'", ch.title));
+                        }
+                        let pop = api
+                            .get_popular_videos("US", None, None, 1)
+                            .await
+                            .map_err(|e| e.to_string())?;
+                        Ok(format!(
+                            "Public Guest YouTube API OK ({} item fetched)",
+                            pop.items.len()
+                        ))
+                    },
+                    AppMessage::ApiConnectionTested,
+                )
+            }
             UiMessage::StartGoogleSignIn => {
                 if self.ui.cred_client_id.trim().is_empty() {
                     self.ui.show_credentials_form = true;
                     self.ui.toast = Some((
-                        "Configure Google Client ID below (see GOOGLE_OAUTH_SETUP.md)".to_string(),
+                        "Import OAuth JSON or enter Google Client ID first (see GOOGLE_OAUTH_SETUP.md)"
+                            .to_string(),
                         true,
                     ));
                     return Task::none();
                 }
+                if let Some(prev) = self.pkce_cancel.take() {
+                    prev.cancel();
+                }
+                let cancel = CancellationToken::new();
+                self.pkce_cancel = Some(cancel.clone());
+                self.ui.pkce_auth_loading = true;
+                self.ui.auth_last_error = None;
                 let auth = self.auth.clone();
                 Task::perform(
-                    async move { auth.start_pkce_login().await.map_err(|e| e.to_string()) },
+                    async move {
+                        auth.start_pkce_login_cancellable(cancel)
+                            .await
+                            .map_err(|e| e.to_string())
+                    },
                     AppMessage::AuthCompleted,
                 )
+            }
+            UiMessage::CancelGoogleSignIn => {
+                if let Some(cancel) = self.pkce_cancel.take() {
+                    cancel.cancel();
+                }
+                self.ui.pkce_auth_loading = false;
+                self.ui.toast = Some(("Browser sign-in cancelled".to_string(), false));
+                Task::none()
             }
             UiMessage::SwitchToAccount(acc_opt) => {
                 let _ = self.auth.switch_account(acc_opt.as_deref());
                 self.ui.active_account = self.storage.get_active_account().unwrap_or(None);
                 self.ui.show_account_modal = false;
-                Task::none()
+                self.ui.active_user_channel = None;
+                self.ui.subscriptions.clear();
+                self.ui.subscribed_ids.clear();
+                self.ui.auth_reauth_required = false;
+                self.ui.auth_last_error = None;
+
+                let acc_id = self.ui.active_account.as_ref().map(|a| a.id.clone());
+                self.ui.history = self.storage.get_history(acc_id.as_deref(), 50).unwrap_or_default();
+                self.ui.continue_watching = self
+                    .ui
+                    .history
+                    .iter()
+                    .filter(|h| h.is_resumable())
+                    .cloned()
+                    .collect();
+                self.ui.playlists = self.storage.get_playlists(acc_id.as_deref()).unwrap_or_default();
+
+                if let Some(ref id) = acc_id {
+                    self.ui.auth_granted_scopes = self.auth.granted_scopes_for(id);
+                    if let Ok(Some(ch_json)) = self.storage.get_setting(&format!("channel_info:{}", id)) {
+                        self.ui.active_user_channel = serde_json::from_str(&ch_json).ok();
+                    }
+                    self.ui.auth_session_status = "Restoring Google session...".to_string();
+                } else {
+                    self.ui.auth_granted_scopes.clear();
+                    self.ui.auth_last_refresh_at = None;
+                    self.ui.auth_session_status = "Guest Mode".to_string();
+                }
+
+                let force_mock = std::env::var("FLUXTUBE_OFFLINE_MOCK")
+                    .map(|v| v == "true" || v == "1")
+                    .unwrap_or(false);
+                let (api, is_mock) = build_api_client(
+                    &self.http,
+                    &self.quota,
+                    &self.ui.cred_api_key,
+                    acc_id.is_some(),
+                    force_mock,
+                );
+                self.api = api;
+                self.ui.is_mock_mode = is_mock;
+
+                self.load_initial_feed_task()
             }
             UiMessage::SignOutAccount(acc_id) => {
                 let _ = self.vault.delete_token(&acc_id);
+                self.auth.coordinator().invalidate_cache(&acc_id);
                 let _ = self.storage.delete_account(&acc_id);
+                if self.ui.active_account.as_ref().map(|a| &a.id) == Some(&acc_id) {
+                    self.ui.active_user_channel = None;
+                    self.ui.subscriptions.clear();
+                    self.ui.subscribed_ids.clear();
+                    self.ui.auth_granted_scopes.clear();
+                    self.ui.auth_last_refresh_at = None;
+                    self.ui.auth_reauth_required = false;
+                    self.ui.auth_session_status = "Guest Mode".to_string();
+                }
                 self.ui.accounts = self.storage.get_all_accounts().unwrap_or_default();
                 self.ui.active_account = self.storage.get_active_account().unwrap_or(None);
-                Task::none()
+                self.load_initial_feed_task()
+            }
+            UiMessage::RevokeGoogleAccess(acc_id) => {
+                let auth = self.auth.clone();
+                let id_for_msg = acc_id.clone();
+                Task::perform(
+                    async move {
+                        let res = auth.revoke_and_logout(&acc_id).await.map_err(|e| e.to_string());
+                        (id_for_msg, res)
+                    },
+                    |(id, res)| AppMessage::AccessRevoked(id, res),
+                )
             }
             UiMessage::DismissToast => {
                 self.ui.toast = None;

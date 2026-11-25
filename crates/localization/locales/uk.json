@@ -117,6 +117,7 @@
     "appearance": "Зовнішній вигляд",
     "performance": "Продуктивність",
     "privacy": "Конфіденційність і дані",
+    "google_api": "Google API",
     "updates": "Оновлення",
     "language": "Мова",
     "theme": "Тема",
@@ -168,7 +169,19 @@
     "cancel_device": "Скасувати",
     "waiting_approval": "Очікування підтвердження в браузері...",
     "credentials_title": "Ключі Google Cloud API",
-    "save_credentials": "Зберегти ключі"
+    "save_credentials": "Зберегти ключі",
+    "import_json": "Імпортувати OAuth JSON...",
+    "clear_credentials": "Очистити ключі",
+    "cancel_login": "Скасувати вхід у браузері",
+    "retry_login": "Повторити авторизацію",
+    "revoke_access": "Відкликати доступ Google",
+    "session_status": "Статус сесії",
+    "last_refresh": "Останнє оновлення токена",
+    "granted_scopes": "Надані дозволи (Scopes)",
+    "api_status": "Стан YouTube API",
+    "your_channel": "Підключений канал YouTube",
+    "test_connection": "Перевірити з'єднання",
+    "reauth_required": "Сесія закінчилася або відкликана — потрібна повторна авторизація"
   },
   "history": {
     "title": "Історія переглядів",

@@ -1,4 +1,8 @@
-use crate::coordinator::TokenRefreshCoordinator;
+use crate::config::{
+    mask_identifier, DesktopOAuthConfig, GOOGLE_AUTH_ENDPOINT, GOOGLE_REVOKE_ENDPOINT,
+    GOOGLE_TOKEN_ENDPOINT, GOOGLE_USERINFO_ENDPOINT,
+};
+use crate::coordinator::{TokenManager, TokenRefreshCoordinator};
 use crate::device::{
     poll_device_token_once, request_device_code as http_request_device_code, DeviceCodeResponse,
     DeviceTokenPoll, GOOGLE_DEVICE_CODE_ENDPOINT,
@@ -6,20 +10,47 @@ use crate::device::{
 use crate::error::AuthError;
 use crate::loopback::LoopbackListener;
 use crate::pkce::PkceSession;
-use crate::token::{exchange_code_for_tokens, fetch_user_info, TokenExchangeResponse};
+use crate::token::{
+    exchange_code_for_tokens, fetch_user_info, revoke_google_token, validate_id_token_claims,
+    TokenExchangeResponse,
+};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use fluxtube_core::UserProfile;
 use fluxtube_security::CredentialVault;
 use fluxtube_storage::StorageManager;
+use parking_lot::RwLock;
+use secrecy::{ExposeSecret, SecretString};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
-/// Authenticated user session info.
-#[derive(Debug, Clone)]
+/// High-level status of the current Google OAuth session.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SessionStatus {
+    Guest,
+    Authenticated,
+    ReauthRequired(String),
+}
+
+/// Authenticated user session info (access token is kept only in memory).
+#[derive(Clone)]
 pub struct AuthSession {
     pub profile: UserProfile,
     pub access_token: String,
     pub expires_at: DateTime<Utc>,
+    pub granted_scopes: Vec<String>,
+}
+
+impl std::fmt::Debug for AuthSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AuthSession")
+            .field("profile_id", &self.profile.id)
+            .field("access_token", &"[REDACTED]")
+            .field("expires_at", &self.expires_at)
+            .field("granted_scopes", &self.granted_scopes)
+            .finish()
+    }
 }
 
 /// Non-blocking result from polling a pending TV/Device OAuth authorization.
@@ -34,14 +65,17 @@ pub enum DevicePollOutcome {
 pub struct OAuthManager {
     vault: CredentialVault,
     storage: StorageManager,
-    coordinator: Arc<TokenRefreshCoordinator>,
+    coordinator: Arc<TokenManager>,
     http_client: reqwest::Client,
     client_id: String,
-    client_secret: Option<String>,
+    client_secret: Option<SecretString>,
     scopes: Vec<String>,
+    auth_endpoint: String,
     token_endpoint: String,
     userinfo_endpoint: String,
+    revoke_endpoint: String,
     device_code_endpoint: String,
+    granted_scopes: RwLock<HashMap<String, Vec<String>>>,
 }
 
 impl OAuthManager {
@@ -53,25 +87,37 @@ impl OAuthManager {
         client_secret: Option<String>,
         scopes: Vec<String>,
     ) -> Self {
-        let coordinator = Arc::new(TokenRefreshCoordinator::new(
-            vault.clone(),
-            http_client.clone(),
-            client_id.clone(),
-            client_secret.clone(),
-        ));
-
-        Self {
+        Self::with_endpoints(
             vault,
             storage,
-            coordinator,
             http_client,
             client_id,
             client_secret,
             scopes,
-            token_endpoint: "https://oauth2.googleapis.com/token".to_string(),
-            userinfo_endpoint: "https://www.googleapis.com/oauth2/v3/userinfo".to_string(),
-            device_code_endpoint: GOOGLE_DEVICE_CODE_ENDPOINT.to_string(),
-        }
+            GOOGLE_TOKEN_ENDPOINT.to_string(),
+            GOOGLE_USERINFO_ENDPOINT.to_string(),
+        )
+    }
+
+    pub fn from_desktop_config(
+        vault: CredentialVault,
+        storage: StorageManager,
+        http_client: reqwest::Client,
+        cfg: &DesktopOAuthConfig,
+        scopes: Vec<String>,
+    ) -> Self {
+        let mut mgr = Self::with_endpoints(
+            vault,
+            storage,
+            http_client,
+            cfg.client_id.clone(),
+            cfg.client_secret_exposed().map(|s| s.to_string()),
+            scopes,
+            cfg.token_uri.clone(),
+            GOOGLE_USERINFO_ENDPOINT.to_string(),
+        );
+        mgr.auth_endpoint = cfg.auth_uri.clone();
+        mgr
     }
 
     pub fn with_endpoints(
@@ -98,11 +144,16 @@ impl OAuthManager {
             coordinator,
             http_client,
             client_id,
-            client_secret,
+            client_secret: client_secret
+                .filter(|s| !s.trim().is_empty())
+                .map(SecretString::new),
             scopes,
+            auth_endpoint: GOOGLE_AUTH_ENDPOINT.to_string(),
             token_endpoint,
             userinfo_endpoint,
+            revoke_endpoint: GOOGLE_REVOKE_ENDPOINT.to_string(),
             device_code_endpoint: GOOGLE_DEVICE_CODE_ENDPOINT.to_string(),
+            granted_scopes: RwLock::new(HashMap::new()),
         }
     }
 
@@ -111,8 +162,18 @@ impl OAuthManager {
         self
     }
 
-    /// Access coordinator reference.
-    pub fn coordinator(&self) -> &Arc<TokenRefreshCoordinator> {
+    pub fn with_revoke_endpoint(mut self, endpoint: impl Into<String>) -> Self {
+        self.revoke_endpoint = endpoint.into();
+        self
+    }
+
+    pub fn with_auth_endpoint(mut self, endpoint: impl Into<String>) -> Self {
+        self.auth_endpoint = endpoint.into();
+        self
+    }
+
+    /// Access centralized `TokenManager` reference.
+    pub fn coordinator(&self) -> &Arc<TokenManager> {
         &self.coordinator
     }
 
@@ -126,27 +187,75 @@ impl OAuthManager {
         &self.storage
     }
 
-    /// Starts PKCE OAuth 2.0 desktop login flow.
+    pub fn is_configured(&self) -> bool {
+        !self.client_id.trim().is_empty()
+    }
+
+    pub fn masked_client_id(&self) -> String {
+        mask_identifier(&self.client_id)
+    }
+
+    pub fn configured_scopes(&self) -> &[String] {
+        &self.scopes
+    }
+
+    pub fn granted_scopes_for(&self, account_id: &str) -> Vec<String> {
+        if let Some(s) = self.granted_scopes.read().get(account_id) {
+            return s.clone();
+        }
+        if let Ok(Some(raw)) = self
+            .storage
+            .get_setting(&format!("auth_scopes:{}", account_id))
+        {
+            return raw.split_whitespace().map(|s| s.to_string()).collect();
+        }
+        self.scopes.clone()
+    }
+
+    /// Starts PKCE OAuth 2.0 desktop login flow in system browser.
     pub async fn start_pkce_login(&self) -> Result<AuthSession, AuthError> {
+        self.start_pkce_login_cancellable(CancellationToken::new())
+            .await
+    }
+
+    /// Starts cancellable PKCE OAuth 2.0 desktop login flow in system browser.
+    pub async fn start_pkce_login_cancellable(
+        &self,
+        cancel: CancellationToken,
+    ) -> Result<AuthSession, AuthError> {
+        if !self.is_configured() {
+            return Err(AuthError::MissingClientId);
+        }
+
         let loopback = LoopbackListener::bind().await?;
         let redirect_uri = loopback.redirect_uri();
 
         let pkce = PkceSession::new();
         let scopes_slice: Vec<&str> = self.scopes.iter().map(|s| s.as_str()).collect();
-        let auth_url = pkce.build_authorization_url(&self.client_id, &redirect_uri, &scopes_slice);
+        let auth_url = pkce.build_authorization_url_with_endpoint(
+            &self.auth_endpoint,
+            &self.client_id,
+            &redirect_uri,
+            &scopes_slice,
+        );
 
-        tracing::info!(auth_url = %auth_url, "Opening system browser for Google OAuth");
-        let _ = open::that(&auth_url);
+        tracing::info!(redirect_uri = %redirect_uri, "Opening system browser for Google OAuth PKCE");
+        open::that(&auth_url).map_err(|e| AuthError::Io(std::io::Error::other(e)))?;
 
         let code = loopback
-            .wait_for_callback(&pkce.state, Duration::from_secs(120))
+            .wait_for_callback_cancellable(&pkce.state, Duration::from_secs(180), cancel)
             .await?;
+
+        let secret = self
+            .client_secret
+            .as_ref()
+            .map(|s| s.expose_secret().as_str());
 
         let tokens = exchange_code_for_tokens(
             &self.http_client,
             &self.token_endpoint,
             &self.client_id,
-            self.client_secret.as_deref(),
+            secret,
             &code,
             &pkce.code_verifier,
             &redirect_uri,
@@ -158,6 +267,9 @@ impl OAuthManager {
 
     /// Requests a Google OAuth 2.0 Device Code for TV / Limited-Input verification (`google.com/device`).
     pub async fn request_device_code(&self) -> Result<DeviceCodeResponse, AuthError> {
+        if !self.is_configured() {
+            return Err(AuthError::MissingClientId);
+        }
         let scopes_slice: Vec<&str> = self.scopes.iter().map(|s| s.as_str()).collect();
         http_request_device_code(
             &self.http_client,
@@ -170,11 +282,15 @@ impl OAuthManager {
 
     /// Polls the token endpoint once for a pending `device_code`.
     pub async fn poll_device_token(&self, device_code: &str) -> Result<DevicePollOutcome, AuthError> {
+        let secret = self
+            .client_secret
+            .as_ref()
+            .map(|s| s.expose_secret().as_str());
         match poll_device_token_once(
             &self.http_client,
             &self.token_endpoint,
             &self.client_id,
-            self.client_secret.as_deref(),
+            secret,
             device_code,
         )
         .await?
@@ -194,23 +310,36 @@ impl OAuthManager {
         tokens: TokenExchangeResponse,
         fallback_tag: &str,
     ) -> Result<AuthSession, AuthError> {
-        // Attempt to fetch profile info from userinfo endpoint
-        let user_info = fetch_user_info(&self.http_client, &self.userinfo_endpoint, &tokens.access_token)
-            .await
-            .unwrap_or_else(|_| crate::token::GoogleUserInfo {
-                sub: Some(format!("user_{}", fallback_tag)),
-                id: None,
-                email: Some("user@fluxtube.app".to_string()),
-                name: Some("FluxTube User".to_string()),
-                picture: None,
-            });
+        let user_info = fetch_user_info(
+            &self.http_client,
+            &self.userinfo_endpoint,
+            &tokens.access_token,
+        )
+        .await
+        .unwrap_or_else(|_| crate::token::GoogleUserInfo {
+            sub: Some(format!("user_{}", fallback_tag)),
+            id: None,
+            email: Some("user@fluxtube.app".to_string()),
+            name: Some("FluxTube User".to_string()),
+            picture: None,
+        });
 
         let account_id = user_info
             .sub
             .or(user_info.id)
             .unwrap_or_else(|| format!("user_{}", Utc::now().timestamp()));
 
-        let email = user_info.email.unwrap_or_else(|| format!("{}@gmail.com", account_id));
+        // Cross-check OIDC ID token claims when provided by Google
+        if let Some(ref id_tok) = tokens.id_token {
+            if let Err(e) = validate_id_token_claims(id_tok, &self.client_id, Some(&account_id)) {
+                tracing::warn!(error = %e, "ID token claim validation failed");
+                return Err(e);
+            }
+        }
+
+        let email = user_info
+            .email
+            .unwrap_or_else(|| format!("{}@gmail.com", account_id));
         let name = user_info.name.unwrap_or_else(|| "YouTube User".to_string());
         let picture = user_info.picture;
 
@@ -223,12 +352,22 @@ impl OAuthManager {
             created_at: Utc::now(),
         };
 
-        // Commit refresh token to secure OS Keyring
-        if let Some(ref rt) = tokens.refresh_token {
-            self.vault.store_token(&account_id, rt)?;
-        }
+        let granted_scopes: Vec<String> = tokens
+            .scope
+            .as_deref()
+            .map(|s| s.split_whitespace().map(|x| x.to_string()).collect())
+            .filter(|v: &Vec<String>| !v.is_empty())
+            .unwrap_or_else(|| self.scopes.clone());
 
-        // Cache valid token in coordinator
+        self.granted_scopes
+            .write()
+            .insert(account_id.clone(), granted_scopes.clone());
+        let _ = self.storage.set_setting(
+            &format!("auth_scopes:{}", account_id),
+            &granted_scopes.join(" "),
+        );
+
+        // Save refresh token securely in OS Keychain / Credential Manager, access token only in RAM
         self.coordinator.store_tokens(
             &account_id,
             tokens.access_token.clone(),
@@ -236,7 +375,6 @@ impl OAuthManager {
             tokens.refresh_token.as_deref(),
         )?;
 
-        // Save account metadata to local SQLite
         self.storage.save_account(&profile, true)?;
 
         let expires_at = Utc::now() + ChronoDuration::seconds(tokens.expires_in as i64);
@@ -244,7 +382,21 @@ impl OAuthManager {
             profile,
             access_token: tokens.access_token,
             expires_at,
+            granted_scopes,
         })
+    }
+
+    /// Restores an existing session on app startup using its OS vault refresh token (without browser prompt).
+    pub async fn validate_and_restore_session(
+        &self,
+        account_id: &str,
+    ) -> Result<String, AuthError> {
+        self.coordinator.get_valid_access_token(account_id).await
+    }
+
+    /// Recovers once from an HTTP 401 by refreshing the access token.
+    pub async fn handle_unauthorized(&self, account_id: &str) -> Result<String, AuthError> {
+        self.coordinator.handle_unauthorized(account_id).await
     }
 
     /// Returns currently active account profile, if any.
@@ -264,7 +416,6 @@ impl OAuthManager {
                 self.storage.set_active_account(id).map_err(AuthError::Storage)?;
             }
             None => {
-                // Guest mode: clear any currently active account flag
                 if let Some(mut active) = self.storage.get_active_account()? {
                     active.is_active = false;
                     self.storage.save_account(&active, false)?;
@@ -294,11 +445,28 @@ impl OAuthManager {
         self.coordinator.force_refresh(account_id).await
     }
 
-    /// Logs out an account by deleting credentials from vault and storage.
+    /// Logs out an account locally by deleting credentials from vault, memory cache, and SQLite.
     pub async fn logout(&self, account_id: &str) -> Result<(), AuthError> {
         let _ = self.vault.delete_token(account_id);
         self.coordinator.invalidate_cache(account_id);
+        self.granted_scopes.write().remove(account_id);
         self.storage.delete_account(account_id)?;
         Ok(())
+    }
+
+    /// Revokes access remotely at `https://oauth2.googleapis.com/revoke` and logs out locally.
+    pub async fn revoke_and_logout(&self, account_id: &str) -> Result<(), AuthError> {
+        let token_to_revoke = self
+            .vault
+            .get_token(account_id)
+            .ok()
+            .flatten()
+            .or_else(|| self.coordinator.peek_cached_token(account_id));
+
+        if let Some(tok) = token_to_revoke {
+            revoke_google_token(&self.http_client, &self.revoke_endpoint, &tok).await?;
+        }
+
+        self.logout(account_id).await
     }
 }

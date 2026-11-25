@@ -8,8 +8,17 @@ pub enum AuthError {
     #[error("No refresh token stored for account {0}")]
     NoRefreshToken(String),
 
+    #[error("OAuth configuration is invalid or missing: {0}")]
+    InvalidConfig(String),
+
+    #[error("OAuth authorization was cancelled")]
+    Cancelled,
+
     #[error("OAuth authorization denied: {0}")]
     AccessDenied(String),
+
+    #[error("Redirect URI mismatch: {0}")]
+    RedirectUriMismatch(String),
 
     #[error("CSRF state token mismatch")]
     CsrfMismatch,
@@ -22,6 +31,15 @@ pub enum AuthError {
 
     #[error("Device activation code expired; please request a new code")]
     DeviceCodeExpired,
+
+    #[error("Refresh token expired or access revoked (invalid_grant): {0}")]
+    InvalidGrant(String),
+
+    #[error("Unauthorized (HTTP 401): {0}")]
+    Unauthorized(String),
+
+    #[error("OpenID Connect ID token validation failed: {0}")]
+    InvalidIdToken(String),
 
     #[error("HTTP request failed: {0}")]
     Http(#[from] reqwest::Error),

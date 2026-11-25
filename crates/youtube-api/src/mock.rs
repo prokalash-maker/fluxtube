@@ -389,6 +389,14 @@ impl YouTubeDataApi for MockYouTubeApiClient {
             })
     }
 
+    async fn get_my_channel(&self, _access_token: &str) -> Result<Channel, YouTubeApiError> {
+        self.channels
+            .read()
+            .first()
+            .cloned()
+            .ok_or_else(|| YouTubeApiError::NotFound("No mock channel configured".to_string()))
+    }
+
     async fn get_channel_playlists(
         &self,
         channel_id: &str,

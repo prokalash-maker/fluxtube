@@ -34,13 +34,14 @@ pub enum SettingsTab {
     Appearance,
     Performance,
     Privacy,
+    GoogleApi,
     Updates,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthTab {
-    DeviceCode,
     BrowserPkce,
+    DeviceCode,
 }
 
 #[derive(Debug, Clone)]
@@ -134,7 +135,7 @@ pub enum UiMessage {
     ExportDiagnosticReport,
     CheckForUpdates,
 
-    // Auth & Accounts (Device Flow + PKCE + API Credentials)
+    // Auth & Accounts (PKCE + Device Flow + OAuth JSON + API Credentials)
     ToggleAccountModal(bool),
     SwitchAuthTab(AuthTab),
     StartDeviceLogin,
@@ -142,13 +143,18 @@ pub enum UiMessage {
     CopyDeviceCode,
     OpenDeviceUrl,
     StartGoogleSignIn,
+    CancelGoogleSignIn,
+    ImportOAuthJson,
     ToggleCredentialsForm,
     CredClientIdChanged(String),
     CredClientSecretChanged(String),
     CredApiKeyChanged(String),
     SaveGoogleCredentials,
+    ClearGoogleCredentials,
+    TestGoogleApiConnection,
     SwitchToAccount(Option<String>),
     SignOutAccount(String),
+    RevokeGoogleAccess(String),
 
     // System / Window
     DismissToast,

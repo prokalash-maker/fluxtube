@@ -117,6 +117,7 @@
     "appearance": "Внешний вид",
     "performance": "Производительность",
     "privacy": "Конфиденциальность и данные",
+    "google_api": "Google API",
     "updates": "Обновления",
     "language": "Язык",
     "theme": "Тема",
@@ -168,7 +169,19 @@
     "cancel_device": "Отмена",
     "waiting_approval": "Ожидаем подтверждения в браузере...",
     "credentials_title": "Ключи Google Cloud API",
-    "save_credentials": "Сохранить ключи"
+    "save_credentials": "Сохранить ключи",
+    "import_json": "Импорт OAuth JSON...",
+    "clear_credentials": "Очистить ключи",
+    "cancel_login": "Отменить вход в браузере",
+    "retry_login": "Повторить авторизацию",
+    "revoke_access": "Отозвать доступ Google",
+    "session_status": "Статус сессии",
+    "last_refresh": "Последнее обновление токена",
+    "granted_scopes": "Предоставленные права (Scopes)",
+    "api_status": "Состояние YouTube API",
+    "your_channel": "Подключённый канал YouTube",
+    "test_connection": "Проверить подключение",
+    "reauth_required": "Сессия истекла или отозвана — требуется повторный вход"
   },
   "history": {
     "title": "История просмотров",

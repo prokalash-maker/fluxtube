@@ -12,10 +12,13 @@ fluxtube-security = { workspace = true }
 fluxtube-storage = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }
+tokio-util = { workspace = true }
 url = { workspace = true }
 rand = { workspace = true }
 sha2 = { workspace = true }
 base64 = { workspace = true }
+oauth2 = { workspace = true }
+secrecy = { workspace = true }
 chrono = { workspace = true }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }
