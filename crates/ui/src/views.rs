@@ -358,9 +358,8 @@ fn render_video_card<'a>(
             .align_x(Alignment::Center),
         )
         .width(Length::Fill)
-        .height(Length::Fixed(148.0 * metrics.scale))
         .center_x(Length::Fill)
-        .center_y(Length::Fill)
+        .center_y(Length::Fixed(148.0 * metrics.scale))
         .style(move |_| container::Style {
             background: Some(Background::Color(palette.bg_elevated)),
             border: Border {
@@ -791,9 +790,8 @@ fn render_watch_view<'a>(
         .align_x(Alignment::Center),
     )
     .width(Length::Fill)
-    .height(Length::Fixed(player_height))
     .center_x(Length::Fill)
-    .center_y(Length::Fill)
+    .center_y(Length::Fixed(player_height))
     .style(move |_| container::Style {
         background: Some(Background::Color(Color::from_rgb8(10, 11, 14))),
         border: Border {
