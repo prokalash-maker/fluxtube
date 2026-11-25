@@ -112,6 +112,10 @@ pub struct AppPaths {
 
 impl AppPaths {
     pub fn resolve() -> Result<Self, PlatformError> {
+        if let Some(portable_root) = detect_portable_root() {
+            return Ok(Self::from_portable_root(portable_root));
+        }
+
         let base_data = dirs::data_local_dir()
             .or_else(dirs::home_dir)
             .ok_or_else(|| PlatformError::PathError("Unable to resolve local data directory".into()))?;
@@ -134,12 +138,46 @@ impl AppPaths {
         })
     }
 
+    pub fn from_portable_root(root: PathBuf) -> Self {
+        let data_dir = root.join("data");
+        let cache_dir = data_dir.join("cache");
+        let logs_dir = data_dir.join("logs");
+        let db_path = data_dir.join("fluxtube.sqlite");
+        let thumbnails_dir = cache_dir.join("thumbnails");
+
+        Self {
+            data_dir,
+            cache_dir,
+            logs_dir,
+            db_path,
+            thumbnails_dir,
+        }
+    }
+
     pub fn ensure_dirs(&self) -> Result<(), PlatformError> {
         for dir in [&self.data_dir, &self.cache_dir, &self.logs_dir, &self.thumbnails_dir] {
             std::fs::create_dir_all(dir)
                 .map_err(|e| PlatformError::PathError(format!("{}: {}", dir.display(), e)))?;
         }
         Ok(())
+    }
+}
+
+fn detect_portable_root() -> Option<PathBuf> {
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()))?;
+
+    let env_portable = std::env::var("FLUXTUBE_PORTABLE")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
+    let arg_portable = std::env::args().any(|a| a == "--portable");
+    let marker_portable = exe_dir.join("portable.flag").exists() || exe_dir.join(".portable").exists();
+
+    if env_portable || arg_portable || marker_portable {
+        Some(exe_dir)
+    } else {
+        None
     }
 }
 

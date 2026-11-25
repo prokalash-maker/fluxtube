@@ -1,11 +1,13 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod app;
 
 use app::FluxTubeApp;
 use fluxtube_diagnostics::init_logging;
 use iced::Size;
 
-fn load_dotenv_file() {
-    let Ok(content) = std::fs::read_to_string(".env") else {
+fn load_dotenv_from_path(path: &std::path::Path) {
+    let Ok(content) = std::fs::read_to_string(path) else {
         return;
     };
     for line in content.lines() {
@@ -19,6 +21,15 @@ fn load_dotenv_file() {
             if std::env::var_os(key).is_none() {
                 std::env::set_var(key, val);
             }
+        }
+    }
+}
+
+fn load_dotenv_file() {
+    load_dotenv_from_path(std::path::Path::new(".env"));
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            load_dotenv_from_path(&exe_dir.join(".env"));
         }
     }
 }
