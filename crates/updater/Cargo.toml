@@ -1,0 +1,24 @@
+[package]
+name = "fluxtube-updater"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+fluxtube-network = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+ed25519-dalek = "2.1"
+hex = "0.4"
+thiserror = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
+tokio = { version = "1.38", features = ["full", "test-util"] }
+wiremock = { workspace = true }
+tempfile = { workspace = true }
+rand = { workspace = true }

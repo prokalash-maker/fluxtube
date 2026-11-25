@@ -7,10 +7,66 @@
     "home": "Home",
     "trending": "Trending",
     "subscriptions": "Subscriptions",
+    "shorts": "Shorts",
+    "live": "Live",
     "library": "Library",
     "history": "History",
+    "watch_later": "Watch Later",
+    "liked": "Liked Videos",
+    "playlists": "Playlists",
+    "favorites": "Favorite Channels",
     "settings": "Settings",
-    "diagnostics": "Diagnostics"
+    "diagnostics": "Diagnostics",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
+  "search": {
+    "placeholder": "Search videos, channels, playlists or paste YouTube URL...",
+    "button": "Search",
+    "open_url": "Open URL",
+    "clear_history": "Clear search history",
+    "filter_type": "Type",
+    "filter_duration": "Duration",
+    "filter_order": "Sort by",
+    "type_video": "Video",
+    "type_channel": "Channel",
+    "type_playlist": "Playlist",
+    "dur_any": "Any",
+    "dur_short": "Short (<4m)",
+    "dur_medium": "Medium (4-20m)",
+    "dur_long": "Long (>20m)",
+    "order_relevance": "Relevance",
+    "order_date": "Upload date",
+    "order_views": "View count",
+    "empty": "No results found. Try a different query or filter."
+  },
+  "home": {
+    "continue_watching": "Continue Watching",
+    "subscriptions_feed": "Latest from Subscriptions",
+    "trending_now": "Trending Now",
+    "local_recommendations": "Local Picks (Based on Device History)",
+    "refresh": "Refresh",
+    "local_badge": "Device-only"
+  },
+  "watch": {
+    "subscribe": "Subscribe",
+    "subscribed": "Subscribed",
+    "like": "Like",
+    "dislike": "Dislike",
+    "save_later": "Watch Later",
+    "bookmark_ts": "Bookmark Timestamp",
+    "copy_ts_link": "Copy Timestamp Link",
+    "description": "Description",
+    "chapters": "Chapters",
+    "comments": "Comments",
+    "comments_hidden": "Comments hidden to save CPU/RAM",
+    "toggle_comments": "Toggle Comments",
+    "post_comment": "Post Comment",
+    "comment_placeholder": "Write a comment (requires Google sign-in)...",
+    "queue": "Up Next Queue",
+    "related": "Related Videos",
+    "notes": "Local Video Notes",
+    "note_placeholder": "Add private local notes for this video..."
   },
   "player": {
     "play": "Play",
@@ -21,25 +77,68 @@
     "unmute": "Unmute",
     "fullscreen": "Fullscreen",
     "theater_mode": "Theater Mode",
+    "mini_player": "Mini Player",
     "seek_forward": "Seek Forward {seconds}s",
-    "seek_backward": "Seek Backward {seconds}s"
+    "seek_backward": "Seek Backward {seconds}s",
+    "embed_notice": "Official YouTube Embed (isolated WebView)",
+    "open_in_browser": "Open on YouTube"
+  },
+  "channel": {
+    "videos": "Videos",
+    "playlists": "Playlists",
+    "live": "Live",
+    "favorite_add": "Add to Local Favorites",
+    "favorite_remove": "Remove Favorite",
+    "subscribers": "{count} subscribers"
+  },
+  "library": {
+    "device_sync_note": "Local items (History, Watch Later, Bookmarks, Groups) stay strictly on your device. Subscriptions & YouTube playlists sync when signed in.",
+    "create_playlist": "New Local Playlist",
+    "export_playlists": "Export Playlists (JSON)",
+    "bookmarks": "Timestamp Bookmarks",
+    "channel_groups": "Local Channel Groups",
+    "empty_watch_later": "Your local Watch Later list is empty.",
+    "empty_playlists": "No playlists yet."
+  },
+  "shorts": {
+    "prev": "Previous Short",
+    "next": "Next Short",
+    "hide_section": "Hide Shorts",
+    "autoplay": "Autoplay Shorts",
+    "api_note": "Filtered locally by duration <= 60s (official API has no dedicated Shorts endpoint)."
+  },
+  "live": {
+    "status_live": "LIVE",
+    "toggle_chat": "Toggle Chat (Resource Saver)"
   },
   "settings": {
     "title": "Settings",
     "general": "General",
     "appearance": "Appearance",
     "performance": "Performance",
+    "privacy": "Privacy & Data",
+    "updates": "Updates",
     "language": "Language",
     "theme": "Theme",
+    "accent": "Accent Color",
+    "density": "Layout Density",
+    "scale": "UI Scale",
     "profile": {
       "ultralite": "Ultra Lite",
       "balanced": "Balanced",
       "high_quality": "High Quality",
       "custom": "Custom"
     },
+    "recommend_profile": "Auto-Recommend for This PC",
     "hardware_acceleration": "Hardware Acceleration",
     "h264ify": "Force H.264 (Lower CPU)",
-    "cache_size": "Cache Size: {mb} MB"
+    "animations": "UI Animations",
+    "comments_default": "Load Comments Automatically",
+    "private_mode": "Private Mode (Do not record local history)",
+    "cache_size": "Cache Size: {mb} MB",
+    "clear_cache": "Clear Thumbnail Cache",
+    "check_updates": "Check for Updates",
+    "save": "Save Settings"
   },
   "diagnostics": {
     "title": "Diagnostics Center",
@@ -47,13 +146,18 @@
     "memory": "RAM: {used} MB / {total} MB",
     "process_rss": "FluxTube RSS: {rss} MB",
     "uptime": "Uptime: {uptime} seconds",
-    "export_report": "Export Diagnostic Report"
+    "export_report": "Export Diagnostic Report",
+    "video_backend": "Video Backend",
+    "graphics_backend": "Graphics Backend",
+    "decoders": "Hardware Decoders"
   },
   "auth": {
     "login": "Sign In",
     "logout": "Sign Out",
     "guest": "Guest Mode",
-    "switch_account": "Switch Account"
+    "switch_account": "Switch Account",
+    "oauth_note": "Uses Google OAuth 2.0 PKCE via your system browser. Passwords are never entered inside FluxTube.",
+    "mock_mode_badge": "Offline Demo Mode"
   },
   "history": {
     "title": "Watch History",

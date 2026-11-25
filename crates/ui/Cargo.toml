@@ -1,0 +1,17 @@
+[package]
+name = "fluxtube-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+fluxtube-core = { workspace = true }
+fluxtube-design-system = { workspace = true }
+fluxtube-localization = { path = "../localization" }
+fluxtube-settings = { path = "../settings" }
+fluxtube-diagnostics = { path = "../diagnostics" }
+fluxtube-youtube-api = { workspace = true }
+fluxtube-platform = { workspace = true }
+iced = { workspace = true }

@@ -7,10 +7,66 @@
     "home": "Головна",
     "trending": "Популярне",
     "subscriptions": "Підписки",
+    "shorts": "Shorts",
+    "live": "Трансляції",
     "library": "Бібліотека",
     "history": "Історія",
+    "watch_later": "Дивитись пізніше",
+    "liked": "Сподобались",
+    "playlists": "Плейлисти",
+    "favorites": "Обрані канали",
     "settings": "Налаштування",
-    "diagnostics": "Діагностика"
+    "diagnostics": "Діагностика",
+    "collapse": "Згорнути панель",
+    "expand": "Розгорнути панель"
+  },
+  "search": {
+    "placeholder": "Пошук відео, каналів, плейлистів або вставте посилання YouTube...",
+    "button": "Пошук",
+    "open_url": "Відкрити URL",
+    "clear_history": "Очистити історію пошуку",
+    "filter_type": "Тип",
+    "filter_duration": "Тривалість",
+    "filter_order": "Сортування",
+    "type_video": "Відео",
+    "type_channel": "Канал",
+    "type_playlist": "Плейлист",
+    "dur_any": "Будь-яка",
+    "dur_short": "Короткі (<4 хв)",
+    "dur_medium": "Середні (4-20 хв)",
+    "dur_long": "Довгі (>20 хв)",
+    "order_relevance": "Релевантність",
+    "order_date": "За датою",
+    "order_views": "За переглядами",
+    "empty": "Нічого не знайдено. Спробуйте інший запит або фільтр."
+  },
+  "home": {
+    "continue_watching": "Продовжити перегляд",
+    "subscriptions_feed": "Нове з підписок",
+    "trending_now": "Популярне зараз",
+    "local_recommendations": "Локальні добірки (на основі історії)",
+    "refresh": "Оновити",
+    "local_badge": "Лише на пристрої"
+  },
+  "watch": {
+    "subscribe": "Підписатися",
+    "subscribed": "Ви підписані",
+    "like": "Подобається",
+    "dislike": "Не подобається",
+    "save_later": "Дивитись пізніше",
+    "bookmark_ts": "Закладка на таймкод",
+    "copy_ts_link": "Копіювати посилання з часом",
+    "description": "Опис",
+    "chapters": "Розділи",
+    "comments": "Коментарі",
+    "comments_hidden": "Коментарі приховано для економії ЦП та ОЗП",
+    "toggle_comments": "Показати/сховати коментарі",
+    "post_comment": "Надіслати",
+    "comment_placeholder": "Написати коментар (потрібен вхід у Google)...",
+    "queue": "Черга відтворення",
+    "related": "Схожі відео",
+    "notes": "Локальні нотатки",
+    "note_placeholder": "Додайте приватну нотатку до відео..."
   },
   "player": {
     "play": "Відтворити",
@@ -21,25 +77,68 @@
     "unmute": "Увімкнути звук",
     "fullscreen": "Повноекранний режим",
     "theater_mode": "Режим кінотеатру",
+    "mini_player": "Міні-плеєр",
     "seek_forward": "Вперед на {seconds}с",
-    "seek_backward": "Назад на {seconds}с"
+    "seek_backward": "Назад на {seconds}с",
+    "embed_notice": "Офіційний YouTube Embed (ізольований WebView)",
+    "open_in_browser": "Відкрити на YouTube"
+  },
+  "channel": {
+    "videos": "Відео",
+    "playlists": "Плейлисти",
+    "live": "Ефіри",
+    "favorite_add": "Додати в обране",
+    "favorite_remove": "Прибрати з обраного",
+    "subscribers": "{count} підписників"
+  },
+  "library": {
+    "device_sync_note": "Локальні дані (Історія, Дивитись пізніше, Закладки, Групи) зберігаються лише на пристрої. Підписки та плейлисти YouTube синхронізуються після входу.",
+    "create_playlist": "Новий локальний плейлист",
+    "export_playlists": "Експорт плейлистів (JSON)",
+    "bookmarks": "Закладки з таймкодами",
+    "channel_groups": "Локальні групи каналів",
+    "empty_watch_later": "Список «Дивитись пізніше» порожній.",
+    "empty_playlists": "Плейлистів ще немає."
+  },
+  "shorts": {
+    "prev": "Попередній Short",
+    "next": "Наступний Short",
+    "hide_section": "Приховати Shorts",
+    "autoplay": "Автовідтворення Shorts",
+    "api_note": "Відібрано локально за тривалістю <= 60с (офіційний API не має окремого методу Shorts)."
+  },
+  "live": {
+    "status_live": "В ЕФІРІ",
+    "toggle_chat": "Увімкнути/вимкнути чат"
   },
   "settings": {
     "title": "Налаштування",
     "general": "Загальні",
     "appearance": "Зовнішній вигляд",
     "performance": "Продуктивність",
+    "privacy": "Конфіденційність і дані",
+    "updates": "Оновлення",
     "language": "Мова",
     "theme": "Тема",
+    "accent": "Акцентний колір",
+    "density": "Щільність інтерфейсу",
+    "scale": "Масштаб інтерфейсу",
     "profile": {
       "ultralite": "Ультра Легкий",
       "balanced": "Збалансований",
       "high_quality": "Висока якість",
       "custom": "Користувацький"
     },
+    "recommend_profile": "Підібрати під цей ПК",
     "hardware_acceleration": "Апаратне прискорення",
     "h264ify": "Примусовий H.264 (менше навантаження ЦП)",
-    "cache_size": "Розмір кешу: {mb} МБ"
+    "animations": "Анімації інтерфейсу",
+    "comments_default": "Завантажувати коментарі автоматично",
+    "private_mode": "Приватний режим (не зберігати історію)",
+    "cache_size": "Розмір кешу: {mb} МБ",
+    "clear_cache": "Очистити кеш мініатюр",
+    "check_updates": "Перевірити оновлення",
+    "save": "Зберегти"
   },
   "diagnostics": {
     "title": "Центр діагностики",
@@ -47,13 +146,18 @@
     "memory": "ОЗП: {used} МБ / {total} МБ",
     "process_rss": "ОЗП FluxTube: {rss} МБ",
     "uptime": "Час роботи: {uptime} секунд",
-    "export_report": "Експортувати звіт діагностики"
+    "export_report": "Експортувати звіт діагностики",
+    "video_backend": "Відеобекенд",
+    "graphics_backend": "Графічний бекенд",
+    "decoders": "Апаратні декодери"
   },
   "auth": {
     "login": "Увійти",
     "logout": "Вийти",
     "guest": "Гостьовий режим",
-    "switch_account": "Змінити обліковий запис"
+    "switch_account": "Змінити обліковий запис",
+    "oauth_note": "Використовує Google OAuth 2.0 PKCE через системний браузер. Пароль ніколи не вводиться у FluxTube.",
+    "mock_mode_badge": "Офлайн демо-режим"
   },
   "history": {
     "title": "Історія переглядів",

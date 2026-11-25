@@ -1,0 +1,15 @@
+[package]
+name = "fluxtube-platform"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+sysinfo = { workspace = true }
+url = { workspace = true }
+open = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+dirs = "5.0"

@@ -4,7 +4,7 @@ pub const H264IFY_SHIM_JS: &str = r#"
 (function() {
     'use strict';
     var BLOCKED_CODECS = /vp8|vp9|vp09|av01|av1/i;
-    var WEBM_VIDEO = /^video\/webm/i;
+    var WEBM_VIDEO = new RegExp('^video/webm', 'i');
 
     if (window.HTMLMediaElement && window.HTMLMediaElement.prototype) {
         var origCanPlay = window.HTMLMediaElement.prototype.canPlayType;

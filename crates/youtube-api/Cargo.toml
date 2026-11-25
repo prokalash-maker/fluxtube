@@ -10,6 +10,7 @@ license.workspace = true
 fluxtube-core = { workspace = true }
 fluxtube-network = { workspace = true }
 reqwest = { workspace = true }
+url = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }

@@ -1,0 +1,59 @@
+name: FluxTube CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  FLUXTUBE_MOCK_VAULT: "1"
+
+jobs:
+  windows-check-and-test:
+    name: Windows x64 (Test & Build)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets
+      - name: Run Workspace Tests
+        run: cargo test --workspace
+      - name: Run E2E Offline Test Suite
+        run: cargo test --manifest-path tests/Cargo.toml
+      - name: Smoke Test Desktop Binary
+        run: cargo run -p fluxtube-desktop -- --smoke-test
+      - name: Build Release Binary
+        run: cargo build --release -p fluxtube-desktop
+
+  macos-bigsur-target-build:
+    name: macOS (${{ matrix.target }} / min 11.0)
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+            run_tests: false
+          - target: aarch64-apple-darwin
+            run_tests: true
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Check Target Build
+        run: cargo build --release --target ${{ matrix.target }} -p fluxtube-desktop
+      - name: Run Tests (Native Arch)
+        if: ${{ matrix.run_tests }}
+        run: |
+          cargo test --workspace
+          cargo test --manifest-path tests/Cargo.toml
+          cargo run -p fluxtube-desktop -- --smoke-test

@@ -7,10 +7,66 @@
     "home": "Главная",
     "trending": "В тренде",
     "subscriptions": "Подписки",
+    "shorts": "Shorts",
+    "live": "Трансляции",
     "library": "Библиотека",
     "history": "История",
+    "watch_later": "Смотреть позже",
+    "liked": "Понравившиеся",
+    "playlists": "Плейлисты",
+    "favorites": "Избранные каналы",
     "settings": "Настройки",
-    "diagnostics": "Диагностика"
+    "diagnostics": "Диагностика",
+    "collapse": "Свернуть панель",
+    "expand": "Развернуть панель"
+  },
+  "search": {
+    "placeholder": "Поиск видео, каналов, плейлистов или вставьте ссылку YouTube...",
+    "button": "Найти",
+    "open_url": "Открыть URL",
+    "clear_history": "Очистить историю поиска",
+    "filter_type": "Тип",
+    "filter_duration": "Длительность",
+    "filter_order": "Сортировка",
+    "type_video": "Видео",
+    "type_channel": "Канал",
+    "type_playlist": "Плейлист",
+    "dur_any": "Любая",
+    "dur_short": "Короткие (<4 мин)",
+    "dur_medium": "Средние (4-20 мин)",
+    "dur_long": "Длинные (>20 мин)",
+    "order_relevance": "Релевантность",
+    "order_date": "По дате",
+    "order_views": "По просмотрам",
+    "empty": "Ничего не найдено. Попробуйте другой запрос или фильтр."
+  },
+  "home": {
+    "continue_watching": "Продолжить просмотр",
+    "subscriptions_feed": "Новое из подписок",
+    "trending_now": "Популярное сейчас",
+    "local_recommendations": "Локальные подборки (по вашей истории)",
+    "refresh": "Обновить",
+    "local_badge": "Только на устройстве"
+  },
+  "watch": {
+    "subscribe": "Подписаться",
+    "subscribed": "Вы подписаны",
+    "like": "Нравится",
+    "dislike": "Не нравится",
+    "save_later": "Смотреть позже",
+    "bookmark_ts": "Закладка на таймкод",
+    "copy_ts_link": "Копировать ссылку с таймкодом",
+    "description": "Описание",
+    "chapters": "Главы",
+    "comments": "Комментарии",
+    "comments_hidden": "Комментарии скрыты для экономии CPU и RAM",
+    "toggle_comments": "Показать/скрыть комментарии",
+    "post_comment": "Отправить",
+    "comment_placeholder": "Написать комментарий (требуется вход в Google)...",
+    "queue": "Очередь воспроизведения",
+    "related": "Похожие видео",
+    "notes": "Локальные заметки",
+    "note_placeholder": "Добавьте локальную заметку к этому видео..."
   },
   "player": {
     "play": "Воспроизвести",
@@ -21,25 +77,68 @@
     "unmute": "Включить звук",
     "fullscreen": "Полноэкранный режим",
     "theater_mode": "Режим кинотеатра",
+    "mini_player": "Мини-плеер",
     "seek_forward": "Вперед на {seconds}с",
-    "seek_backward": "Назад на {seconds}с"
+    "seek_backward": "Назад на {seconds}с",
+    "embed_notice": "Официальный YouTube Embed (изолированный WebView)",
+    "open_in_browser": "Открыть на YouTube"
+  },
+  "channel": {
+    "videos": "Видео",
+    "playlists": "Плейлисты",
+    "live": "Эфиры",
+    "favorite_add": "В избранное",
+    "favorite_remove": "Убрать из избранного",
+    "subscribers": "{count} подписчиков"
+  },
+  "library": {
+    "device_sync_note": "Локальные данные (История, Смотреть позже, Закладки, Группы) хранятся только на устройстве. Подписки и плейлисты YouTube синхронизируются при входе.",
+    "create_playlist": "Новый локальный плейлист",
+    "export_playlists": "Экспорт плейлистов (JSON)",
+    "bookmarks": "Закладки с таймкодами",
+    "channel_groups": "Локальные группы каналов",
+    "empty_watch_later": "Список «Смотреть позже» пуст.",
+    "empty_playlists": "Плейлистов пока нет."
+  },
+  "shorts": {
+    "prev": "Предыдущий Short",
+    "next": "Следующий Short",
+    "hide_section": "Скрыть Shorts",
+    "autoplay": "Автовоспроизведение Shorts",
+    "api_note": "Отфильтровано локально по длительности <= 60с (официальный API не выделяет Shorts)."
+  },
+  "live": {
+    "status_live": "В ЭФИРЕ",
+    "toggle_chat": "Включить/выключить чат"
   },
   "settings": {
     "title": "Настройки",
     "general": "Общие",
     "appearance": "Внешний вид",
     "performance": "Производительность",
+    "privacy": "Конфиденциальность и данные",
+    "updates": "Обновления",
     "language": "Язык",
     "theme": "Тема",
+    "accent": "Акцентный цвет",
+    "density": "Плотность интерфейса",
+    "scale": "Масштаб интерфейса",
     "profile": {
       "ultralite": "Ультра Легкий",
       "balanced": "Сбалансированный",
       "high_quality": "Высокое качество",
       "custom": "Пользовательский"
     },
+    "recommend_profile": "Подобрать для этого ПК",
     "hardware_acceleration": "Аппаратное ускорение",
     "h264ify": "Принудительный H.264 (снижение нагрузки CPU)",
-    "cache_size": "Размер кэша: {mb} МБ"
+    "animations": "Анимации интерфейса",
+    "comments_default": "Загружать комментарии автоматически",
+    "private_mode": "Приватный режим (не сохранять историю)",
+    "cache_size": "Размер кэша: {mb} МБ",
+    "clear_cache": "Очистить кэш миниатюр",
+    "check_updates": "Проверить обновления",
+    "save": "Сохранить настройки"
   },
   "diagnostics": {
     "title": "Центр диагностики",
@@ -47,13 +146,18 @@
     "memory": "ОЗУ: {used} МБ / {total} МБ",
     "process_rss": "ОЗУ FluxTube: {rss} МБ",
     "uptime": "Время работы: {uptime} секунд",
-    "export_report": "Экспортировать отчет диагностики"
+    "export_report": "Экспортировать отчет диагностики",
+    "video_backend": "Видеобэкенд",
+    "graphics_backend": "Графический бэкенд",
+    "decoders": "Аппаратные декодеры"
   },
   "auth": {
     "login": "Войти",
     "logout": "Выйти",
     "guest": "Гостевой режим",
-    "switch_account": "Сменить аккаунт"
+    "switch_account": "Сменить аккаунт",
+    "oauth_note": "Использует Google OAuth 2.0 PKCE через системный браузер. Пароли никогда не вводятся внутри FluxTube.",
+    "mock_mode_badge": "Офлайн демо-режим"
   },
   "history": {
     "title": "История просмотров",

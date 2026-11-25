@@ -80,17 +80,28 @@ FluxTube provides 4 configurable performance profiles:
 - **Windows**: Visual Studio C++ Build Tools or MinGW
 - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
 
-### Build Workspace
+### Build & Run
 ```bash
-# Check workspace
-cargo check --workspace
-
-# Run all unit and crate tests
+# Run all workspace crate tests
 cargo test --workspace
 
-# Run end-to-end and mock test suite
-cargo test --test tier1_feature_coverage
+# Run 4-tier E2E offline test suites
+cargo test --manifest-path tests/Cargo.toml
+
+# Run desktop startup smoke test
+cargo run -p fluxtube-desktop -- --smoke-test
+
+# Launch FluxTube desktop application
+cargo run -p fluxtube-desktop
 ```
+
+### Documentation
+- [ARCHITECTURE.md](ARCHITECTURE.md) — Crate boundaries, GUI research (Iced vs Slint/egui/Tauri), and async design
+- [FEATURE_MATRIX.md](FEATURE_MATRIX.md) — Official YouTube API v3 vs Embed vs Local capabilities
+- [SECURITY.md](SECURITY.md) — Threat model, PKCE OAuth, OS Keyring/Credential Manager, signed updates
+- [GOOGLE_OAUTH_SETUP.md](GOOGLE_OAUTH_SETUP.md) — Setting up Google Cloud Project, OAuth Desktop Client ID, and API key
+- [BUILD_WINDOWS.md](BUILD_WINDOWS.md) & [BUILD_MACOS.md](BUILD_MACOS.md) — Platform build and packaging instructions (macOS 11 Big Sur+)
+- [PERFORMANCE.md](PERFORMANCE.md) — Resource budgets, `h264ify` acceleration, and caching strategy
 
 ### Setup Google Cloud Credentials (Optional for Live API)
 1. Copy `.env.example` to `.env`:

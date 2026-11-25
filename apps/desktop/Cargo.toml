@@ -1,0 +1,36 @@
+[package]
+name = "fluxtube-desktop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "fluxtube"
+path = "src/main.rs"
+
+[dependencies]
+fluxtube-core = { workspace = true }
+fluxtube-storage = { path = "../../crates/storage" }
+fluxtube-security = { workspace = true }
+fluxtube-settings = { path = "../../crates/settings" }
+fluxtube-localization = { path = "../../crates/localization" }
+fluxtube-diagnostics = { path = "../../crates/diagnostics" }
+fluxtube-network = { workspace = true }
+fluxtube-auth = { workspace = true }
+fluxtube-youtube-api = { workspace = true }
+fluxtube-player = { workspace = true }
+fluxtube-player-embed = { workspace = true }
+fluxtube-player-native = { workspace = true }
+fluxtube-cache = { workspace = true }
+fluxtube-platform = { workspace = true }
+fluxtube-updater = { workspace = true }
+fluxtube-design-system = { workspace = true }
+fluxtube-ui = { workspace = true }
+iced = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+chrono = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }

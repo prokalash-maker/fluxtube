@@ -86,8 +86,9 @@ impl ThumbnailCache {
                     return Ok(cached);
                 }
 
-                // Check L2 On-Disk Cache
-                let raw_bytes = match self.l2.lock().get(url)? {
+                // Check L2 On-Disk Cache (drop MutexGuard before awaiting)
+                let l2_hit = self.l2.lock().get(url)?;
+                let raw_bytes = match l2_hit {
                     Some(bytes) => bytes,
                     None => {
                         // Cache Miss: Fetch over network via ImageFetcher
